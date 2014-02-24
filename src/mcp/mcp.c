@@ -3,19 +3,19 @@
 #include "mcp.h"
 #include "spocknet.h"
 
-int encode_hs00(uint8_t *buf, uint8_t *tbuf, hs00_t *packet, size_t buf_len) {
+int mcp_encode_hs00(uint8_t *buf, mcp_hs00_t *packet, size_t buf_len) {
 	if(buf_len < sizeof(uint8_t)) {
 		return -1;
 	}
 	size_t len = 1;
 	int ret;
-	*tbuf = 0x00;
-	ret = encode_varint(tbuf + len, packet->protocol_version, buf_len - len);
+	*buf = 0x00;
+	ret = mcp_encode_varint(buf + len, packet->protocol_version, buf_len - len);
 	if(ret < 0) {
 		return ret;
 	}
 	len += ret;
-	ret = encode_string(tbuf + len, buf_len - len, packet->server_addr,
+	ret = mcp_encode_string(buf + len, buf_len - len, packet->server_addr,
 	 packet->addr_len);
 	if(ret < 0) {
 		return ret;
@@ -25,23 +25,23 @@ int encode_hs00(uint8_t *buf, uint8_t *tbuf, hs00_t *packet, size_t buf_len) {
 		return ret;
 	}
 	uint16_t port = hton16(packet->server_port);
-	memcpy(tbuf+len, &port, sizeof(port));
+	memcpy(buf+len, &port, sizeof(port));
 	len += sizeof(port);
-	*(tbuf + len) = packet->next_state;
-	return encode_plen(buf, buf_len, tbuf, ++len);
+	*(buf + len) = packet->next_state;
+	return mcp_encode_plen(buf, ++len, buf_len);
 }
 
 //ToDo: Make sure we don't buffer overflow by checking plen
-int decode_hs00(hs00_t *packet, uint8_t *buf, size_t plen) {
+int mcp_decode_hs00(mcp_hs00_t *packet, uint8_t *buf, size_t plen) {
 	int ret;
 	size_t len;
 
-	ret = decode_varint(&packet->protocol_version, buf);
+	ret = mcp_decode_varint(&packet->protocol_version, buf);
 	if (ret < 0) {
 		return ret;
 	}
 	len = ret;
-	ret = decode_string(&packet->server_addr, (int32_t*)&packet->addr_len,
+	ret = mcp_decode_string(&packet->server_addr, (int32_t*)&packet->addr_len,
 	 buf + len);
 	if (ret < 0) {
 		return ret;
@@ -55,43 +55,44 @@ int decode_hs00(hs00_t *packet, uint8_t *buf, size_t plen) {
 	return ++len;
 }
 
-int encode_sc00(uint8_t *buf, uint8_t *tbuf, sc00_t *packet, size_t buf_len) {
+int mcp_encode_sc00(uint8_t *buf, mcp_sc00_t *packet, size_t buf_len) {
 	if(buf_len < sizeof(uint8_t)) {
 		return -1;
 	}
 	int ret;
-	*tbuf = 0x00;
-	ret = encode_string(tbuf + sizeof(uint8_t), buf_len - sizeof(uint8_t),
+	*buf = 0x00;
+	ret = mcp_encode_string(buf + sizeof(uint8_t), buf_len - sizeof(uint8_t),
 	 packet->resp, packet->resp_len);
 	if(ret < 0) {
 		return ret;
 	}
-	return ++ret;
+	return mcp_encode_plen(buf, ++ret + sizeof(uint8_t), buf_len);
 }
 
-int decode_sc00(sc00_t *packet, uint8_t *buf, size_t plen) {
-	return decode_string(&packet->resp, (int32_t*)&packet->resp_len, buf);
+int mcp_decode_sc00(mcp_sc00_t *packet, uint8_t *buf, size_t plen) {
+	return mcp_decode_string(&packet->resp, (int32_t*)&packet->resp_len, buf);
 }
 
-int encode_sc01(uint8_t *buf, uint8_t *tbuf, sc01_t *packet, size_t buf_len) {
+int mcp_encode_sc01(uint8_t *buf, mcp_sc01_t *packet, size_t buf_len) {
 	if(buf_len < sizeof(uint8_t) + sizeof(int64_t)) {
 		return -1;
 	}
-	*tbuf = 0x01;
+	*buf = 0x01;
 	int64_t t = hton64(packet->ping_time);
-	memcpy(tbuf + sizeof(uint8_t), &t, sizeof(int64_t));
-	return sizeof(uint8_t) + sizeof(int64_t);
+	memcpy(buf + sizeof(uint8_t), &t, sizeof(int64_t));
+	return mcp_encode_plen(buf, sizeof(uint8_t) + sizeof(int64_t), buf_len);
 }
 
-int decode_sc01(sc01_t *packet, uint8_t *buf, size_t plen) {
+int mcp_decode_sc01(mcp_sc01_t *packet, uint8_t *buf, size_t plen) {
 	packet->ping_time = ntoh64(*(int64_t*) buf);
 	return sizeof(int64_t);
 }
 
-int encode_ss00(uint8_t *buf, uint8_t *tbuf, ss00_t *packet, size_t buf_len) {
-	return 0;
+int mcp_encode_ss00(uint8_t *buf, mcp_ss00_t *packet, size_t buf_len) {
+	*buf = 0x00;
+	return mcp_encode_plen(buf, sizeof(uint8_t), buf_len);
 }
 
-int decode_ss00(ss00_t *packet, uint8_t *buf, size_t plen) {
+int mcp_decode_ss00(mcp_ss00_t *packet, uint8_t *buf, size_t plen) {
 	return 0;
 }
