@@ -19,10 +19,13 @@ int mcp_encode_varint(uint8_t *buf, int32_t varint, size_t buf_len) {
 	return ++len;
 }
 
-int mcp_decode_varint(int32_t *varint, uint8_t *buf) {
+int mcp_decode_varint(int32_t *varint, uint8_t *buf, size_t buf_len) {
 	size_t len;
+	if(buf_len <= 0) {
+		return -1;
+	}
 	for(len = 0, *varint = 0; *buf&0x80; ++buf, ++len) {
-		if(len > 4) {
+		if((len >= 4)||(len >= buf_len)) {
 			return -1;
 		}
 		*varint |= (*buf&0x7F)<<(len*7);
@@ -43,40 +46,40 @@ int mcp_encode_string(uint8_t *buf, size_t buf_len, char *string, size_t size) {
 //ToDo: Have func take an alloc func ptr and use that instead of malloc
 //alloc func will be expected to fufill same guarantees as malloc
 //ToDo: Error check malloc
-//ToDo: Optional max length or error, importanrt for decode_sc00
-int mcp_decode_string(char **string, int32_t *size, uint8_t *buf) {
-	int ret = mcp_decode_varint(size, buf);
+int mcp_decode_string(char **string, int32_t *size, uint8_t *buf, size_t buf_len) {
+	int ret = mcp_decode_varint(size, buf, buf_len);
 	if(ret < 0) {
 		return ret;
+	} else if(ret + *size > buf_len) {
+		return -1;
 	}
 	*string = malloc(*size*sizeof(char));
 	memcpy(*string, buf + ret, *size);
 	return ret + *size;
 }
 
-int mcp_encode_plen(uint8_t *pbuf, size_t plen, size_t pbuf_len) {
+int mcp_encode_plen(uint8_t *buf, size_t plen, size_t buf_len) {
 	uint8_t tbuf[sizeof(int32_t)];
 	int ret = mcp_encode_varint(tbuf, plen, sizeof(int32_t));
 	if(ret < 0) {
 		return ret;
-	} else if(ret + plen > pbuf_len) {
+	} else if(ret + plen > buf_len) {
 		return -1;
 	}
-	memmove(pbuf + ret, pbuf, plen);
-	memcpy(pbuf, tbuf, ret);
+	memmove(buf + ret, buf, plen);
+	memcpy(buf, tbuf, ret);
 	return ret + plen;
 }
 
-//ToDo: Make sure we don't buffer overflow by checking buf_len
 //Consider not assigning to variable until finished calculating size
 int mcp_decode_pheader(size_t *size, int32_t *id, uint8_t *buf, size_t buf_len) {
 	size_t len;
-	int ret = mcp_decode_varint((int32_t*) size, buf);
-	len = ret;
+	int ret = mcp_decode_varint((int32_t*) size, buf, buf_len);
 	if(ret < 0) {
 		return ret;
 	}
-	ret = mcp_decode_varint(id, buf + len);
+	len = ret;
+	ret = mcp_decode_varint(id, buf + len, buf_len - len);
 	if(ret < 0) {
 		return ret;
 	}

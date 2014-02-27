@@ -8,13 +8,13 @@ extern "C" {
 
 int mcp_encode_varint(uint8_t *buf, int32_t varint, size_t buf_len);
 
-int mcp_decode_varint(int32_t *varint, uint8_t *buf);
+int mcp_decode_varint(int32_t *varint, uint8_t *buf, size_t buf_len);
 
 int mcp_encode_string(uint8_t *buf, size_t buf_len, char *string, size_t size);
 
-int mcp_decode_string(char **string, int32_t *size, uint8_t *buf);
+int mcp_decode_string(char **string, int32_t *size, uint8_t *buf, size_t buf_len);
 
-int mcp_encode_plen(uint8_t *pbuf, size_t plen, size_t pbuf_len);
+int mcp_encode_plen(uint8_t *buf, size_t plen, size_t buf_len);
 
 int mcp_decode_pheader(size_t *size, int32_t *id, uint8_t *buf, size_t buf_len);
 
@@ -30,7 +30,7 @@ typedef struct {
 
 int mcp_encode_hs00(uint8_t *buf, mcp_hs00_t *packet, size_t buf_len);
 
-int mcp_decode_hs00(mcp_hs00_t *packet, uint8_t *buf, size_t plen);
+int mcp_decode_hs00(mcp_hs00_t *packet, uint8_t *buf, size_t buf_len);
 
 typedef struct {
 	size_t resp_len;
@@ -39,7 +39,7 @@ typedef struct {
 
 int mcp_encode_sc00(uint8_t *buf, mcp_sc00_t *packet, size_t buf_len);
 
-int mcp_decode_sc00(mcp_sc00_t *packet, uint8_t *buf, size_t plen);
+int mcp_decode_sc00(mcp_sc00_t *packet, uint8_t *buf, size_t buf_len);
 
 typedef struct {
 	int64_t ping_time;
@@ -47,7 +47,7 @@ typedef struct {
 
 int mcp_encode_sc01(uint8_t *buf, mcp_sc01_t *packet, size_t buf_len);
 
-int mcp_decode_sc01(mcp_sc01_t *packet, uint8_t *buf, size_t plen);
+int mcp_decode_sc01(mcp_sc01_t *packet, uint8_t *buf, size_t buf_len);
 
 //Technically ss00 is empty, put a void pointer avoid warnings
 //ToDo: ss00 shouldn't need to exist, just put up a warning to
@@ -58,7 +58,7 @@ typedef struct {
 
 int mcp_encode_ss00(uint8_t *buf, mcp_ss00_t *packet, size_t buf_len);
 
-int mcp_decode_ss00(mcp_ss00_t *packet, uint8_t *buf, size_t plen);
+int mcp_decode_ss00(mcp_ss00_t *packet, uint8_t *buf, size_t buf_len);
 
 //ss01 is identical to sc01
 #define mcp_ss01_t mcp_sc01_t

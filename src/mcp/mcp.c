@@ -31,22 +31,28 @@ int mcp_encode_hs00(uint8_t *buf, mcp_hs00_t *packet, size_t buf_len) {
 	return mcp_encode_plen(buf, ++len, buf_len);
 }
 
-//ToDo: Make sure we don't buffer overflow by checking plen
-int mcp_decode_hs00(mcp_hs00_t *packet, uint8_t *buf, size_t plen) {
+int mcp_decode_hs00(mcp_hs00_t *packet, uint8_t *buf, size_t buf_len) {
 	int ret;
 	size_t len;
 
-	ret = mcp_decode_varint(&packet->protocol_version, buf);
+	ret = mcp_decode_varint(&packet->protocol_version, buf, buf_len);
 	if (ret < 0) {
 		return ret;
 	}
 	len = ret;
-	ret = mcp_decode_string(&packet->server_addr, (int32_t*)&packet->addr_len,
-	 buf + len);
+	ret = mcp_decode_string(
+		&packet->server_addr, 
+		(int32_t*)&packet->addr_len,
+		buf + len,
+		buf_len - len
+	);
 	if (ret < 0) {
 		return ret;
 	}
 	len += ret;
+	if(buf_len < len + sizeof(uint16_t)) {
+		return -1;
+	}
 	uint16_t port;
 	memcpy(&port, buf + len, sizeof(port));
 	packet->server_port = ntoh16(port);
@@ -69,8 +75,8 @@ int mcp_encode_sc00(uint8_t *buf, mcp_sc00_t *packet, size_t buf_len) {
 	return mcp_encode_plen(buf, ++ret + sizeof(uint8_t), buf_len);
 }
 
-int mcp_decode_sc00(mcp_sc00_t *packet, uint8_t *buf, size_t plen) {
-	return mcp_decode_string(&packet->resp, (int32_t*)&packet->resp_len, buf);
+int mcp_decode_sc00(mcp_sc00_t *packet, uint8_t *buf, size_t buf_len) {
+	return mcp_decode_string(&packet->resp, (int32_t*)&packet->resp_len, buf, buf_len);
 }
 
 int mcp_encode_sc01(uint8_t *buf, mcp_sc01_t *packet, size_t buf_len) {
@@ -83,16 +89,22 @@ int mcp_encode_sc01(uint8_t *buf, mcp_sc01_t *packet, size_t buf_len) {
 	return mcp_encode_plen(buf, sizeof(uint8_t) + sizeof(int64_t), buf_len);
 }
 
-int mcp_decode_sc01(mcp_sc01_t *packet, uint8_t *buf, size_t plen) {
+int mcp_decode_sc01(mcp_sc01_t *packet, uint8_t *buf, size_t buf_len) {
+	if(buf_len < sizeof(int64_t)) {
+		return -1;
+	}
 	packet->ping_time = ntoh64(*(int64_t*) buf);
 	return sizeof(int64_t);
 }
 
 int mcp_encode_ss00(uint8_t *buf, mcp_ss00_t *packet, size_t buf_len) {
+	if(buf_len < sizeof(uint8_t)) {
+		return -1;
+	}
 	*buf = 0x00;
 	return mcp_encode_plen(buf, sizeof(uint8_t), buf_len);
 }
 
-int mcp_decode_ss00(mcp_ss00_t *packet, uint8_t *buf, size_t plen) {
+int mcp_decode_ss00(mcp_ss00_t *packet, uint8_t *buf, size_t buf_len) {
 	return 0;
 }

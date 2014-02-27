@@ -7,9 +7,9 @@ int main(int argc, char *argv[]) {
 	uint8_t buf[4096];
 
 	mcp_hs00_t handshake = {
-		.protocol_version = 5,
-		.addr_len         = strlen("nickg.org"),
-		.server_addr      = "nickg.org",
+		.protocol_version = 4,
+		.addr_len         = sizeof("127.0.0.1")-1,
+		.server_addr      = "127.0.0.1",
 		.server_port      = 25565,
 		.next_state       = 1
 	};
