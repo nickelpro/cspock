@@ -34,6 +34,10 @@ static mcp_hs00_t handshake = {
 static mcp_ss00_t ping_req;
 
 client_t* client_init(client_t *client, uint8_t *buf, size_t len) {
+	if((len == 0)||(buf == NULL)) {
+		len = 4096;
+		buf = malloc(len);
+	}
 	client->state = 0;
 	client->client_buf.base = buf;
 	client->client_buf.cur = buf;
@@ -45,7 +49,7 @@ client_t* client_init(client_t *client, uint8_t *buf, size_t len) {
 	return client;
 }
 
-void buf_alloc(uv_handle_t *tcp, size_t size, uv_buf_t *buf) {
+void read_buf_alloc(uv_handle_t *tcp, size_t size, uv_buf_t *buf) {
 	client_t *client = (client_t*)tcp->data;
 	client_buf_t *client_buf = &client->client_buf;
 	if(
@@ -86,7 +90,6 @@ void client_write_cb(uv_write_t *req, int status) {
 	free(req->data);
 	free(req);
 }
-
 
 void client_write_ss01(client_t *client) {
 	uv_write_t *req;
@@ -169,10 +172,11 @@ void client_read_cb(uv_stream_t *tcp, ssize_t nread, const uv_buf_t *buf) {
 			case 0x02: switch(packet_id) {
 				case 0x00: ;
 					mcp_sc00_t psc00;
-					ret = mcp_decode_sc00(&psc00, client_buf->cur, client_buf->rem);
-					fwrite(psc00.resp, sizeof(char), psc00.resp_len, stdout);
-					printf("\n");
+					ret = mcp_decode_sc00(&psc00, client_buf->cur,
+						client_buf->rem, malloc);
+					printf("%.*s\n", psc00.resp_len, psc00.resp);
 					client_write_ss01(client);
+					free(psc00.resp);
 					break;
 				case 0x01: ;
 					mcp_sc01_t psc01;
@@ -204,7 +208,7 @@ void client_connect_cb(uv_connect_t *req, int status) {
 	client_t *client = (client_t*)req->handle->data;
 	client_write_hs00(client);
 	client_write_ss00(client);
-	uv_read_start(req->handle, buf_alloc, client_read_cb);
+	uv_read_start(req->handle, read_buf_alloc, client_read_cb);
 }
 
 int main(int argc, char *argv[]) {

@@ -12,7 +12,10 @@ int mcp_decode_varint(int32_t *varint, uint8_t *buf, size_t buf_len);
 
 int mcp_encode_string(uint8_t *buf, size_t buf_len, char *string, size_t size);
 
-int mcp_decode_string(char **string, int32_t *size, uint8_t *buf, size_t buf_len);
+typedef void *(*mcp_str_alloc)(size_t size);
+
+int mcp_decode_string(char **string, int32_t *size, uint8_t *buf,
+	size_t buf_len, mcp_str_alloc stralloc);
 
 int mcp_encode_plen(uint8_t *buf, size_t plen, size_t buf_len);
 
@@ -30,7 +33,8 @@ typedef struct {
 
 int mcp_encode_hs00(uint8_t *buf, mcp_hs00_t *packet, size_t buf_len);
 
-int mcp_decode_hs00(mcp_hs00_t *packet, uint8_t *buf, size_t buf_len);
+int mcp_decode_hs00(mcp_hs00_t *packet, uint8_t *buf, size_t buf_len,
+	mcp_str_alloc stralloc);
 
 typedef struct {
 	size_t resp_len;
@@ -39,7 +43,8 @@ typedef struct {
 
 int mcp_encode_sc00(uint8_t *buf, mcp_sc00_t *packet, size_t buf_len);
 
-int mcp_decode_sc00(mcp_sc00_t *packet, uint8_t *buf, size_t buf_len);
+int mcp_decode_sc00(mcp_sc00_t *packet, uint8_t *buf, size_t buf_len,
+	mcp_str_alloc stralloc);
 
 typedef struct {
 	int64_t ping_time;
@@ -64,6 +69,8 @@ int mcp_decode_ss00(mcp_ss00_t *packet, uint8_t *buf, size_t buf_len);
 #define mcp_ss01_t mcp_sc01_t
 #define mcp_encode_ss01 mcp_encode_sc01
 #define mcp_decode_ss01 mcp_decode_sc01
+
+
 
 #ifdef __cplusplus
 }
