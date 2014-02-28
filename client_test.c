@@ -102,7 +102,7 @@ void client_write_ss01(client_t *client) {
 	req = malloc(sizeof(*req));
 	req->data = buf.base;
 	uv_write(req, (uv_stream_t*)&client->tcp, &buf, 1, client_write_cb);
-	printf("Ping Time Sent: %d\n", p.ping_time);
+	printf("Ping Time Sent: %d\n", (int)p.ping_time);
 }
 
 void client_write_hs00(client_t *client) {
@@ -174,14 +174,14 @@ void client_read_cb(uv_stream_t *tcp, ssize_t nread, const uv_buf_t *buf) {
 					mcp_sc00_t psc00;
 					ret = mcp_decode_sc00(&psc00, client_buf->cur,
 						client_buf->rem, malloc);
-					printf("%.*s\n", psc00.resp_len, psc00.resp);
+					printf("%.*s\n", (int)psc00.resp_len, psc00.resp);
 					client_write_ss01(client);
 					free(psc00.resp);
 					break;
 				case 0x01: ;
 					mcp_sc01_t psc01;
 					ret = mcp_decode_sc01(&psc01, client_buf->cur, client_buf->rem);
-					printf("Ping Time Recieved: %d\n", psc01.ping_time);
+					printf("Ping Time Recieved: %d\n", (int)psc01.ping_time);
 					uv_shutdown(
 						&client->shutdown_req, 
 						(uv_stream_t*)tcp, 
