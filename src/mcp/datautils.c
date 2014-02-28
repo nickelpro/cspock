@@ -47,9 +47,7 @@ int mcp_encode_string(uint8_t *buf, size_t buf_len, char *string,
 	return ret + size;
 }
 
-//ToDo: Have func take an alloc func ptr and use that instead of malloc
-//alloc func will be expected to fufill same guarantees as malloc
-//ToDo: Error check malloc
+//ToDo: Error check stralloc
 int mcp_decode_string(char **string, int32_t *size, uint8_t *buf,
 	size_t buf_len, mcp_str_alloc stralloc)
 {
@@ -59,7 +57,7 @@ int mcp_decode_string(char **string, int32_t *size, uint8_t *buf,
 	} else if (ret + *size > buf_len) {
 		return -1;
 	}
-	*string = stralloc(*size*sizeof(char));
+	*string = stralloc(*size*sizeof(**string));
 	memcpy(*string, buf + ret, *size);
 	return ret + *size;
 }

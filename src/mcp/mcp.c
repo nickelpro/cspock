@@ -11,13 +11,14 @@ int mcp_encode_hs00(uint8_t *buf, mcp_hs00_t *packet, size_t buf_len)
 	size_t len = 1;
 	int ret;
 	*buf = 0x00;
-	ret = mcp_encode_varint(buf + len, packet->protocol_version, buf_len - len);
+	ret = mcp_encode_varint(buf + len, packet->protocol_version,
+		buf_len - len);
 	if (ret < 0) {
 		return ret;
 	}
 	len += ret;
 	ret = mcp_encode_string(buf + len, buf_len - len, packet->server_addr,
-	 packet->addr_len);
+		packet->addr_len);
 	if (ret < 0) {
 		return ret;
 	}
@@ -43,13 +44,8 @@ int mcp_decode_hs00(mcp_hs00_t *packet, uint8_t *buf, size_t buf_len,
 		return ret;
 	}
 	len = ret;
-	ret = mcp_decode_string(
-		&packet->server_addr, 
-		(int32_t*)&packet->addr_len,
-		buf + len,
-		buf_len - len,
-		stralloc
-	);
+	ret = mcp_decode_string(&packet->server_addr, (int32_t*)&packet->addr_len,
+		buf + len, buf_len - len, stralloc);
 	if (ret < 0) {
 		return ret;
 	}
@@ -73,7 +69,7 @@ int mcp_encode_sc00(uint8_t *buf, mcp_sc00_t *packet, size_t buf_len)
 	int ret;
 	*buf = 0x00;
 	ret = mcp_encode_string(buf + sizeof(uint8_t), buf_len - sizeof(uint8_t),
-	 packet->resp, packet->resp_len);
+		packet->resp, packet->resp_len);
 	if (ret < 0) {
 		return ret;
 	}
