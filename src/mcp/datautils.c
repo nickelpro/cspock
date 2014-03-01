@@ -4,6 +4,19 @@
 #include <stdlib.h>
 #include "mcp.h"
 
+//Occasionally used for debugging, just leave it here until everything matures
+/*
+static void ByteToHex(uint8_t *bytes, size_t len)
+{
+	size_t i;
+	for (i = 0; i < len; i++) {
+		if (i > 0) printf(" ");
+		printf("%02X", bytes[i]);
+	}
+	printf("\n");
+}
+*/
+
 int mcp_encode_varint(uint8_t *buf, int32_t varint, size_t buf_len)
 {
 	size_t len = 0;
@@ -47,9 +60,9 @@ int mcp_encode_string(uint8_t *buf, size_t buf_len, char *string,
 	return ret + size;
 }
 
-//ToDo: Error check stralloc
+//ToDo: Error check mcpalloc
 int mcp_decode_string(char **string, int32_t *size, uint8_t *buf,
-	size_t buf_len, mcp_str_alloc stralloc)
+	size_t buf_len, mcp_alloc mcpalloc)
 {
 	int ret = mcp_decode_varint(size, buf, buf_len);
 	if (ret < 0) {
@@ -57,7 +70,7 @@ int mcp_decode_string(char **string, int32_t *size, uint8_t *buf,
 	} else if (ret + *size > buf_len) {
 		return -1;
 	}
-	*string = stralloc(*size*sizeof(**string));
+	*string = mcpalloc(*size*sizeof(**string));
 	memcpy(*string, buf + ret, *size);
 	return ret + *size;
 }
@@ -91,14 +104,4 @@ int mcp_decode_pheader(size_t *size, int32_t *id, uint8_t *buf, size_t buf_len)
 	}
 	*size -= ret;
 	return len + ret;
-}
-
-void ByteToHex(uint8_t *bytes, size_t len)
-{
-	size_t i;
-	for (i = 0; i < len; i++) {
-		if (i > 0) printf(" ");
-		printf("%02X", bytes[i]);
-	}
-	printf("\n");
 }

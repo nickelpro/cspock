@@ -33,7 +33,8 @@ static mcp_hs00_t handshake = {
 
 static mcp_ss00_t ping_req;
 
-client_t* client_init(client_t *client, uint8_t *buf, size_t len) {
+client_t* client_init(client_t *client, uint8_t *buf, size_t len)
+{
 	if((len == 0)||(buf == NULL)) {
 		len = 4096;
 		buf = malloc(len);
@@ -49,17 +50,18 @@ client_t* client_init(client_t *client, uint8_t *buf, size_t len) {
 	return client;
 }
 
-void read_buf_alloc(uv_handle_t *tcp, size_t size, uv_buf_t *buf) {
+void read_buf_alloc(uv_handle_t *tcp, size_t size, uv_buf_t *buf)
+{
 	client_t *client = (client_t*)tcp->data;
 	client_buf_t *client_buf = &client->client_buf;
-	if(
+	if (
 		(size > client_buf->len - client_buf->used) &&
 		(size <= client_buf->len - client_buf->rem) 
 	) {
 		memmove(client_buf->base, client_buf->cur, client_buf->rem);
 		client_buf->cur = client_buf->base;
 		client_buf->used = client_buf->rem;
-	} else if(size > client_buf->len - client_buf->rem) {
+	} else if (size > client_buf->len - client_buf->rem) {
 		size_t s = ((size + client_buf->rem)/client_buf->len)+1;
 		s = s*client_buf->len;
 		uint8_t *c = memcpy(malloc(s), client_buf->cur, client_buf->rem);
@@ -75,23 +77,27 @@ void read_buf_alloc(uv_handle_t *tcp, size_t size, uv_buf_t *buf) {
 	);
 }
 
-void client_shutdown_cb(uv_shutdown_t *req, int status) {
+void client_shutdown_cb(uv_shutdown_t *req, int status)
+{
 	printf("Shutting down...\n");
 }
 
-void client_close_cb(uv_handle_t* handle) {
+void client_close_cb(uv_handle_t* handle)
+{
 	client_t *client = (client_t*)handle->data;
 	client_buf_t *client_buf = &client->client_buf;
 	free(client_buf->base);
 	free(client);
 }
 
-void client_write_cb(uv_write_t *req, int status) {
+void client_write_cb(uv_write_t *req, int status)
+{
 	free(req->data);
 	free(req);
 }
 
-void client_write_ss01(client_t *client) {
+void client_write_ss01(client_t *client)
+{
 	uv_write_t *req;
 	uv_buf_t buf;
 	uint8_t pbuf[4096];
@@ -105,7 +111,8 @@ void client_write_ss01(client_t *client) {
 	printf("Ping Time Sent: %d\n", (int)p.ping_time);
 }
 
-void client_write_hs00(client_t *client) {
+void client_write_hs00(client_t *client)
+{
 	uv_write_t *req;
 	uv_buf_t buf;
 	uint8_t pbuf[4096];
@@ -117,7 +124,8 @@ void client_write_hs00(client_t *client) {
 	uv_write(req, (uv_stream_t*)&client->tcp, &buf, 1, client_write_cb);
 }
 
-void client_write_ss00(client_t *client) {
+void client_write_ss00(client_t *client)
+{
 	uv_write_t *req;
 	uv_buf_t buf;
 	uint8_t pbuf[4096];
@@ -128,35 +136,36 @@ void client_write_ss00(client_t *client) {
 	uv_write(req, (uv_stream_t*)&client->tcp, &buf, 1, client_write_cb);
 }
 
-void client_read_cb(uv_stream_t *tcp, ssize_t nread, const uv_buf_t *buf) {
+void client_read_cb(uv_stream_t *tcp, ssize_t nread, const uv_buf_t *buf)
+{
 	client_t *client = (client_t*)tcp->data;
 	client_buf_t *client_buf = &client->client_buf;
 	int ret;
 
-	if(nread<0) {
+	if (nread<0) {
 		uv_close((uv_handle_t*)tcp, client_close_cb);
 		return;
-	} else if(nread == 0) {
+	} else if (nread == 0) {
 		return;
 	}
 
 	client_buf->used += nread;
 	client_buf->rem  += nread;
 	for(;;) {
-		if(client->read_len < 0) {
+		if (client->read_len < 0) {
 			ret = mcp_decode_varint(
 				&client->read_len, 
 				client_buf->cur,
 				client_buf->rem
 			);
-			if(ret < 0) {
+			if (ret < 0) {
 				client->read_len = -1;
 				break;
 			}
 			client_buf->cur += ret;
 			client_buf->rem -= ret;
 		}
-		if(client_buf->rem < client->read_len) {
+		if (client_buf->rem < client->read_len) {
 			break;
 		}
 	
@@ -168,15 +177,15 @@ void client_read_cb(uv_stream_t *tcp, ssize_t nread, const uv_buf_t *buf) {
 		);
 		client_buf->cur += ret;
 		client_buf->rem -= ret;
-		switch(client->state) {
+		switch (client->state) {
 			case 0x02: switch(packet_id) {
 				case 0x00: ;
 					mcp_sc00_t psc00;
 					ret = mcp_decode_sc00(&psc00, client_buf->cur,
 						client_buf->rem, malloc);
-					printf("%.*s\n", (int)psc00.resp_len, psc00.resp);
+					printf("%.*s\n", (int)psc00.str_len, psc00.str);
 					client_write_ss01(client);
-					free(psc00.resp);
+					free(psc00.str);
 					break;
 				case 0x01: ;
 					mcp_sc01_t psc01;
@@ -204,14 +213,16 @@ void client_read_cb(uv_stream_t *tcp, ssize_t nread, const uv_buf_t *buf) {
 	}
 }
 
-void client_connect_cb(uv_connect_t *req, int status) {
+void client_connect_cb(uv_connect_t *req, int status)
+{
 	client_t *client = (client_t*)req->handle->data;
 	client_write_hs00(client);
 	client_write_ss00(client);
 	uv_read_start(req->handle, read_buf_alloc, client_read_cb);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	struct sockaddr_in server_addr;
 	uv_loop_t *loop = uv_default_loop();
 	client_t *myclient = malloc(sizeof(*myclient));
