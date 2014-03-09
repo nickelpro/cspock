@@ -9,9 +9,9 @@
 typedef struct {
 	uint8_t *base;
 	uint8_t *cur;
-	size_t len;
-	size_t used;
-	size_t rem;
+	size_t len;  //Total size of buffer
+	size_t used; //Bytes used
+	size_t rem;  //Remaining useful bytes
 } client_buf_t;
 
 typedef struct {
@@ -50,6 +50,7 @@ client_t* client_init(client_t *client, uint8_t *buf, size_t len)
 	return client;
 }
 
+//ToDo: Error check malloc/memmove/memcpy
 void read_buf_alloc(uv_handle_t *tcp, size_t size, uv_buf_t *buf)
 {
 	client_t *client = (client_t*)tcp->data;
@@ -82,9 +83,9 @@ void client_shutdown_cb(uv_shutdown_t *req, int status)
 	printf("Shutting down...\n");
 }
 
-void client_close_cb(uv_handle_t* handle)
+void client_close_cb(uv_handle_t *tcp)
 {
-	client_t *client = (client_t*)handle->data;
+	client_t *client = (client_t*)tcp->data;
 	client_buf_t *client_buf = &client->client_buf;
 	free(client_buf->base);
 	free(client);
@@ -142,7 +143,7 @@ void client_read_cb(uv_stream_t *tcp, ssize_t nread, const uv_buf_t *buf)
 	client_buf_t *client_buf = &client->client_buf;
 	int ret;
 
-	if (nread<0) {
+	if (nread < 0) {
 		uv_close((uv_handle_t*)tcp, client_close_cb);
 		return;
 	} else if (nread == 0) {
@@ -170,11 +171,7 @@ void client_read_cb(uv_stream_t *tcp, ssize_t nread, const uv_buf_t *buf)
 		}
 	
 		int32_t packet_id;
-		ret = mcp_decode_varint(
-			&packet_id, 
-			client_buf->cur,
-			client_buf->rem
-		);
+		ret = mcp_decode_varint(&packet_id, client_buf->cur, client_buf->rem);
 		client_buf->cur += ret;
 		client_buf->rem -= ret;
 		switch (client->state) {
@@ -189,13 +186,11 @@ void client_read_cb(uv_stream_t *tcp, ssize_t nread, const uv_buf_t *buf)
 					break;
 				case 0x01: ;
 					mcp_sc01_t psc01;
-					ret = mcp_decode_sc01(&psc01, client_buf->cur, client_buf->rem);
+					ret = mcp_decode_sc01(&psc01, client_buf->cur,
+						client_buf->rem);
 					printf("Ping Time Recieved: %d\n", (int)psc01.ping_time);
-					uv_shutdown(
-						&client->shutdown_req, 
-						(uv_stream_t*)tcp, 
-						client_shutdown_cb
-					);
+					uv_shutdown(&client->shutdown_req,
+						(uv_stream_t*)&client->tcp, client_shutdown_cb);
 					break;
 				default:
 					printf("%s\n", "Entered P default, something is wrong");
