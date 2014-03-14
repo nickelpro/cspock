@@ -10,5 +10,5 @@ mcp: $(mcp_files) test.c
 ping_test: $(mcp_files) client_test.c
 	$(CC) $(CFLAGS) $(includes) -luv $^ -o $@
 
-server_test: $(mcp_files) server_test.c
-	$(CC) $(CFLAGS) $(includes) -luv $^ -o $@
+server_test: $(mcp_files) src/server/*.c
+	$(CC) -g $(CFLAGS) $(includes) -luv $^ -o $@ 

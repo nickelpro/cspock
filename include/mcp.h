@@ -7,25 +7,33 @@ extern "C" {
 //ToDo: Comments/Documentation
 
 int mcp_encode_varint(uint8_t *buf, int32_t varint, size_t buf_len);
-
 int mcp_decode_varint(int32_t *varint, uint8_t *buf, size_t buf_len);
 
-int mcp_encode_string(uint8_t *buf, size_t buf_len, char *string, size_t size);
+typedef struct {
+	int32_t len;
+	char *base;
+} mcp_str_t;
 
 typedef void *(*mcp_alloc)(size_t size);
 
-int mcp_decode_string(char **string, int32_t *size, uint8_t *buf,
-	size_t buf_len, mcp_alloc mcpalloc);
+int mcp_encode_str(uint8_t *buf, size_t buf_len, mcp_str_t str);
+int mcp_decode_str(mcp_str_t *str, uint8_t *buf, size_t buf_len,
+	mcp_alloc mcpalloc);
 
 int mcp_encode_plen(uint8_t *buf, size_t plen, size_t buf_len);
 
 int mcp_decode_pheader(size_t *size, int32_t *id, uint8_t *buf, size_t buf_len);
 
+
+//NBT
+
+
+
+
 //Handshake
 typedef struct {
 	int32_t protocol_version;
-	int32_t addr_len;
-	char *server_addr;
+	mcp_str_t server_addr;
 	uint16_t server_port;
 	uint8_t next_state;
 } mcp_hs00_t;
@@ -36,8 +44,7 @@ int mcp_decode_hs00(mcp_hs00_t *packet, uint8_t *buf, size_t buf_len,
 
 //Status Response
 typedef struct {
-	int32_t str_len;
-	char *str;
+	mcp_str_t str;
 } mcp_sc00_t;
 
 int mcp_encode_sc00(uint8_t *buf, mcp_sc00_t *packet, size_t buf_len);
@@ -77,8 +84,7 @@ int mcp_decode_ss00(mcp_ss00_t *packet, uint8_t *buf, size_t buf_len);
 
 //Encryption Request
 typedef struct {
-	int32_t id_len;
-	char *server_id;
+	mcp_str_t server_id;
 	int16_t key_len;
 	uint8_t *pub_key;
 	int16_t token_len;
@@ -91,10 +97,8 @@ int mcp_decode_lc01(mcp_lc01_t *packet, uint8_t *buf, size_t buf_len,
 
 //Login Success
 typedef struct {
-	int32_t uuid_len;
-	char *uuid;
-	int32_t username_len;
-	char *username;
+	mcp_str_t uuid;
+	mcp_str_t username;
 } mcp_lc02_t;
 
 int mcp_encode_lc02(uint8_t *buf, mcp_lc02_t *packet, size_t buf_len);
@@ -118,6 +122,25 @@ typedef struct {
 int mcp_encode_ls01(uint8_t *buf, mcp_ls01_t *packet, size_t buf_len);
 int mcp_decode_ls01(mcp_ls01_t *packet, uint8_t *buf, size_t buf_len,
 	mcp_alloc mcpalloc);
+
+//Keep Alive
+typedef struct {
+	int32_t keep_alive;
+} mcp_pc00_t;
+
+int mcp_encode_pc00(uint8_t *buf, mcp_pc00_t *packet, size_t buf_len);
+int mcp_decode_pc00(mcp_pc00_t *packet, uint8_t *buf, size_t buf_len);
+
+typedef struct {
+	int32_t eid;
+	uint8_t gamemode;
+	int8_t dimension;
+	uint8_t difficulty;
+	uint8_t max_players;
+	mcp_str_t level_type;
+
+} mcp_pc01_t;
+
 
 #ifdef __cplusplus
 }

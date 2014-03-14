@@ -49,30 +49,29 @@ int mcp_decode_varint(int32_t *varint, uint8_t *buf, size_t buf_len)
 	return ++len;
 }
 
-int mcp_encode_string(uint8_t *buf, size_t buf_len, char *string, 
-	size_t size)
+int mcp_encode_str(uint8_t *buf, size_t buf_len, mcp_str_t str)
 {
-	int ret = mcp_encode_varint(buf, size, buf_len);
-	if ((ret < 0)||(ret + size > buf_len)) {
+	int ret = mcp_encode_varint(buf, str.len, buf_len);
+	if ((ret < 0)||(ret + str.len > buf_len)) {
 		return -1;
 	}
-	memcpy(buf + ret, string, size);
-	return ret + size;
+	memcpy(buf + ret, str.base, str.len);
+	return ret + str.len;
 }
 
 //ToDo: Error check mcpalloc
-int mcp_decode_string(char **string, int32_t *size, uint8_t *buf,
-	size_t buf_len, mcp_alloc mcpalloc)
+int mcp_decode_str(mcp_str_t *str, uint8_t *buf, size_t buf_len,
+	mcp_alloc mcpalloc)
 {
-	int ret = mcp_decode_varint(size, buf, buf_len);
+	int ret = mcp_decode_varint(&str->len, buf, buf_len);
 	if (ret < 0) {
 		return ret;
-	} else if (ret + *size > buf_len) {
+	} else if (ret + str->len > buf_len) {
 		return -1;
 	}
-	*string = mcpalloc(*size*sizeof(**string));
-	memcpy(*string, buf + ret, *size);
-	return ret + *size;
+	str->base = mcpalloc(str->len*sizeof(*str->base));
+	memcpy(str->base, buf + ret, str->len);
+	return ret + str->len;
 }
 
 int mcp_encode_plen(uint8_t *buf, size_t plen, size_t buf_len) 

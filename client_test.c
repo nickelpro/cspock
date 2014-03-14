@@ -25,8 +25,10 @@ typedef struct {
 
 static mcp_hs00_t handshake = {
 	.protocol_version = 4,
-	.addr_len         = sizeof("127.0.0.1")-1,
-	.server_addr      = "127.0.0.1",
+	.server_addr      = {
+		.base = "127.0.0.1",
+		.len  = sizeof("127.0.0.1")-1
+	}
 	.server_port      = 25565,
 	.next_state       = 1
 };
@@ -180,9 +182,9 @@ void client_read_cb(uv_stream_t *tcp, ssize_t nread, const uv_buf_t *buf)
 					mcp_sc00_t psc00;
 					ret = mcp_decode_sc00(&psc00, client_buf->cur,
 						client_buf->rem, malloc);
-					printf("%.*s\n", (int)psc00.str_len, psc00.str);
+					printf("%.*s\n", (int)psc00.str.len, psc00.str.base);
 					client_write_ss01(client);
-					free(psc00.str);
+					free(psc00.str.base);
 					break;
 				case 0x01: ;
 					mcp_sc01_t psc01;

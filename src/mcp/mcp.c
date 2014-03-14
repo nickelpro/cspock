@@ -8,17 +8,16 @@ int mcp_encode_hs00(uint8_t *buf, mcp_hs00_t *packet, size_t buf_len)
 	if (buf_len < sizeof(*buf)) {
 		return -1;
 	}
-	size_t len = 1;
-	int ret;
 	*buf = 0x00;
+	size_t len = sizeof(*buf);
+	int ret;
 	ret = mcp_encode_varint(buf + len, packet->protocol_version,
 		buf_len - len);
 	if (ret < 0) {
 		return ret;
 	}
 	len += ret;
-	ret = mcp_encode_string(buf + len, buf_len - len, packet->server_addr,
-		packet->addr_len);
+	ret = mcp_encode_str(buf + len, buf_len - len, packet->server_addr);
 	if (ret < 0) {
 		return ret;
 	}
@@ -44,8 +43,8 @@ int mcp_decode_hs00(mcp_hs00_t *packet, uint8_t *buf, size_t buf_len,
 		return ret;
 	}
 	len = ret;
-	ret = mcp_decode_string(&packet->server_addr, &packet->addr_len,
-		buf + len, buf_len - len, mcpalloc);
+	ret = mcp_decode_str(&packet->server_addr, buf + len, buf_len - len,
+		mcpalloc);
 	if (ret < 0) {
 		return ret;
 	}
@@ -65,10 +64,10 @@ int mcp_encode_sc00(uint8_t *buf, mcp_sc00_t *packet, size_t buf_len)
 	if (buf_len < sizeof(*buf)) {
 		return -1;
 	}
-	int ret;
 	*buf = 0x00;
-	ret = mcp_encode_string(buf + sizeof(*buf), buf_len - sizeof(*buf),
-		packet->str, packet->str_len);
+	int ret;
+	ret = mcp_encode_str(buf + sizeof(*buf), buf_len - sizeof(*buf),
+		packet->str);
 	if (ret < 0) {
 		return ret;
 	}
@@ -78,8 +77,7 @@ int mcp_encode_sc00(uint8_t *buf, mcp_sc00_t *packet, size_t buf_len)
 int mcp_decode_sc00(mcp_sc00_t *packet, uint8_t *buf, size_t buf_len,
 	mcp_alloc mcpalloc)
 {
-	return mcp_decode_string(&packet->str, &packet->str_len, buf,
-		buf_len, mcpalloc);
+	return mcp_decode_str(&packet->str, buf, buf_len, mcpalloc);
 }
 
 int mcp_encode_sc01(uint8_t *buf, mcp_sc01_t *packet, size_t buf_len)
@@ -122,10 +120,9 @@ int mcp_encode_lc01(uint8_t *buf, mcp_lc01_t *packet, size_t buf_len)
 		return -1;
 	}
 	*buf = 0x01;
-	size_t len = 1;
+	size_t len = sizeof(*buf);
 	int ret;
-	ret = mcp_encode_string(buf + len, buf_len - len, packet->server_id,
-		packet->id_len);
+	ret = mcp_encode_str(buf + len, buf_len - len, packet->server_id);
 	if (ret < 0) {
 		return ret;
 	} else if (buf_len < ret + len + packet->key_len + packet->token_len +
@@ -149,8 +146,7 @@ int mcp_decode_lc01(mcp_lc01_t *packet, uint8_t *buf, size_t buf_len,
 {
 	size_t len;
 	int ret;
-	ret = mcp_decode_string(&packet->server_id, &packet->id_len, buf,
-		buf_len, mcpalloc);
+	ret = mcp_decode_str(&packet->server_id, buf, buf_len, mcpalloc);
 	if (ret < 0) {
 		return ret;
 	}
@@ -188,14 +184,12 @@ int mcp_encode_lc02(uint8_t *buf, mcp_lc02_t *packet, size_t buf_len)
 	*buf = 0x02;
 	size_t len = 1;
 	int ret;
-	ret = mcp_encode_string(buf + len, buf_len - len, packet->uuid,
-		packet->uuid_len);
+	ret = mcp_encode_str(buf + len, buf_len - len, packet->uuid);
 	if (ret < 0) {
 		return ret;
 	}
 	len += ret;
-	ret = mcp_encode_string(buf + len, buf_len - len, packet->username,
-		packet->username_len);
+	ret = mcp_encode_str(buf + len, buf_len - len, packet->username);
 	if (ret < 0) {
 		return ret;
 	}
@@ -208,14 +202,13 @@ int mcp_decode_lc02(mcp_lc02_t *packet, uint8_t *buf, size_t buf_len,
 {
 	size_t len;
 	int ret;
-	ret = mcp_decode_string(&packet->uuid, &packet->uuid_len, buf,
-		buf_len, mcpalloc);
+	ret = mcp_decode_str(&packet->uuid, buf, buf_len, mcpalloc);
 	if (ret < 0) {
 		return ret;
 	}
 	len = ret;
-	ret = mcp_decode_string(&packet->username, &packet->username_len,
-		buf + len, buf_len - len, mcpalloc);
+	ret = mcp_decode_str(&packet->username, buf + len, buf_len - len,
+		mcpalloc);
 	if (ret < 0) {
 		return ret;
 	}

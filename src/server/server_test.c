@@ -7,6 +7,12 @@
 #include "mcp.h"
 
 typedef struct {
+	unsigned int num_clients;
+	unsigned int max_clients;
+	uv_tcp_t tcp;
+} server_t;
+
+typedef struct {
 	uint8_t *base;
 	uint8_t *cur;
 	size_t len;
@@ -18,29 +24,37 @@ typedef struct {
 	int state;
 	client_buf_t client_buf;
 	int32_t read_len;
-	uv_tcp_t tcp;
 	uv_tcp_t *server;
+	uv_tcp_t tcp;
 	uv_shutdown_t shutdown_req;
 } client_t;
 
 static mcp_sc00_t status_resp = {
-	.str = "{\"description\":\"CSPOCK IS ALIVE\",\"players\":{\"max\":1,\"online\":0},\"version\":{\"name\":\"1.7.2\",\"protocol\":4}}",
-	.str_len = sizeof("{\"description\":\"CSPOCK IS ALIVE\",\"players\":{\"max\":1,\"online\":0},\"version\":{\"name\":\"1.7.2\",\"protocol\":4}}") - 1
+	.str = {
+		.base = "{\"description\":\"CSPOCK IS ALIVE\",\"players\":{\"max\":1,\"online\":0},\"version\":{\"name\":\"1.7.2\",\"protocol\":4}}",
+	    .len = sizeof("{\"description\":\"CSPOCK IS ALIVE\",\"players\":{\"max\":1,\"online\":0},\"version\":{\"name\":\"1.7.2\",\"protocol\":4}}") - 1
+	}
 };
 
 static mcp_lc00_t lolnop = {
-	.str = "\"lol I'm not a real server\"",
-	.str_len = sizeof("\"lol I'm not a real server\"") - 1
+	.str = {
+		.base = "\"lol I'm not a real server\"",
+		.len = sizeof("\"lol I'm not a real server\"") - 1
+	}
 };
 
 static mcp_lc00_t proto_ver_low = {
-	.str = "\"Outdated client! Please use 1.7.2\"",
-	.str_len = sizeof("\"Outdated client! Please use 1.7.2\"") - 1
+	.str = {
+		.base = "\"Outdated client! Please use 1.7.2\"",
+		.len = sizeof("\"Outdated client! Please use 1.7.2\"") - 1
+	}
 };
 
 static mcp_lc00_t proto_ver_high = {
-	.str = "\"Outdated server! I'm still on 1.7.2\"",
-	.str_len = sizeof("\"Outdated server! I'm still on 1.7.2\"") - 1
+	.str = {
+		.base = "\"Outdated server! I'm still on 1.7.2\"",
+		.len = sizeof("\"Outdated server! I'm still on 1.7.2\"") - 1
+	}
 };
 
 void server_write_cb(uv_write_t *req, int status)
@@ -175,6 +189,7 @@ void server_read_cb(uv_stream_t *tcp, ssize_t nread, const uv_buf_t *buf)
 					mcp_hs00_t phs00;
 					ret = mcp_decode_hs00(&phs00, client_buf->cur,
 						client_buf->rem, malloc);
+					free(phs00.server_addr.base);
 					client->state = phs00.next_state;
 					if (client->state == 0x01) {
 						break;
@@ -217,6 +232,8 @@ void server_read_cb(uv_stream_t *tcp, ssize_t nread, const uv_buf_t *buf)
 					ret = 0;
 					break;
 			} break;
+
+			case 0x02: break;
 
 			default:
 				printf("Entered state default, something is wrong, state: %d\n",
