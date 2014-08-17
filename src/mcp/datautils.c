@@ -18,6 +18,60 @@ static void ByteToHex(uint8_t *bytes, size_t len)
 }
 */
 
+int encode_int8(uint8_t *buf, uint8_t num) {
+	*buf = num;
+	return sizeof(num);
+}
+int decode_int8(uint8_t *num, uint8_t *buf) {
+	*num = *buf;
+	return sizeof(num);
+}
+
+int encode_int16(uint8_t *buf, uint16_t num) {
+	*(uint16_t*) buf = hton16(num);
+	return sizeof(num);
+}
+int decode_int16(uint16_t *num, uint8_t *buf) {
+	*num = ntoh16(*(uint16_t*) buf);
+	return sizeof(num);
+}
+
+int encode_int32(uint8_t *buf, uint32_t num) {
+	*(uint32_t*) buf = hton32(num);
+	return sizeof(num);
+}
+int decode_int32(uint32_t *num, uint8_t *buf) {
+	*num = ntoh32(*(uint32_t*) buf);
+	return sizeof(num);
+}
+
+int encode_int64(uint8_t *buf, uint64_t num) {
+	*(uint64_t*) buf = hton64(num);
+	return sizeof(num);
+}
+int decode_int64(uint64_t *num, uint8_t *buf) {
+	*num = ntoh64(*(uint64_t*) buf);
+	return sizeof(num);
+}
+
+int encode_float(uint8_t *buf, float num) {
+	*(float*) buf = num;
+	return sizeof(num);
+}
+int decode_float(float *num, uint8_t *buf) {
+	*num = *(float*) buf;
+	return sizeof(num);
+}
+
+int encode_double(uint8_t *buf, double num) {
+	*(double*) buf = num;
+	return sizeof(num);
+}
+int decode_double(double *num, uint8_t *buf) {
+	*num = *(double*) buf;
+	return sizeof(num);
+}
+
 int mcp_encode_varint(uint8_t *buf, int32_t varint, size_t buf_len)
 {
 	size_t len = 0;
@@ -50,8 +104,7 @@ int mcp_decode_varint(int32_t *varint, uint8_t *buf, size_t buf_len)
 	return ++len;
 }
 
-//Fix this
-int mcp_encode_str(uint8_t *buf, size_t buf_len, mcp_str_t str)
+int mcp_encode_str(uint8_t *buf, mcp_str_t str, size_t buf_len)
 {
 	int ret = mcp_encode_varint(buf, str.len, buf_len);
 	if ((ret < 0)||(ret + str.len > buf_len)) {

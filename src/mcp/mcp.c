@@ -18,7 +18,7 @@ int mcp_encode_hs00(uint8_t *buf, mcp_hs00_t *packet, size_t buf_len)
 		return ret;
 	}
 	len += ret;
-	ret = mcp_encode_str(buf + len, buf_len - len, packet->server_addr);
+	ret = mcp_encode_str(buf + len, packet->server_addr, buf_len - len);
 	if (ret < 0) {
 		return ret;
 	}
@@ -68,8 +68,8 @@ int mcp_encode_sc00(uint8_t *buf, mcp_sc00_t *packet, size_t buf_len)
 	}
 	*buf = 0x00;
 	int ret;
-	ret = mcp_encode_str(buf + sizeof(*buf), buf_len - sizeof(*buf),
-		packet->str);
+	ret = mcp_encode_str(buf + sizeof(*buf), packet->str,
+		buf_len - sizeof(*buf));
 	if (ret < 0) {
 		return ret;
 	}
@@ -127,7 +127,7 @@ int mcp_encode_lc01(uint8_t *buf, mcp_lc01_t *packet, size_t buf_len)
 	*buf = 0x01;
 	size_t len = sizeof(*buf);
 	int ret;
-	ret = mcp_encode_str(buf + len, buf_len - len, packet->server_id);
+	ret = mcp_encode_str(buf + len, packet->server_id, buf_len - len);
 	if (ret < 0) {
 		return ret;
 	} else if (buf_len < ret + len + packet->key_len + packet->token_len +
@@ -190,12 +190,12 @@ int mcp_encode_lc02(uint8_t *buf, mcp_lc02_t *packet, size_t buf_len)
 	*buf = 0x02;
 	size_t len = sizeof(*buf);
 	int ret;
-	ret = mcp_encode_str(buf + len, buf_len - len, packet->uuid);
+	ret = mcp_encode_str(buf + len, packet->uuid, buf_len - len);
 	if (ret < 0) {
 		return ret;
 	}
 	len += ret;
-	ret = mcp_encode_str(buf + len, buf_len - len, packet->username);
+	ret = mcp_encode_str(buf + len, packet->username, buf_len - len);
 	if (ret < 0) {
 		return ret;
 	}
@@ -314,7 +314,7 @@ int mcp_encode_pc01(uint8_t *buf, mcp_pc01_t *packet, size_t buf_len)
 	len += sizeof(packet->difficulty);
 	*(buf + len) = packet->max_players;
 	len += sizeof(packet->max_players);
-	int ret = mcp_encode_str(buf + len, buf_len - len, packet->level_type);
+	int ret = mcp_encode_str(buf + len, packet->level_type, buf_len - len);
 	if (ret < 0) {
 		return ret;
 	}
@@ -348,6 +348,28 @@ int mcp_decode_pc01(mcp_pc01_t *packet, uint8_t *buf, size_t buf_len,
 	}
 	len += ret;
 	return len;
+}
+
+//Play Clientbound 0x02 Chat Message
+int mcp_encode_pc02(uint8_t *buf, mcp_pc02_t *packet, size_t buf_len)
+{
+	if (buf_len < sizeof(*buf)) {
+		return -1;
+	}
+	*buf = 0x00;
+	int ret;
+	ret = mcp_encode_str(buf + sizeof(*buf), packet->json_data,
+		buf_len - sizeof(*buf));
+	if (ret < 0) {
+		return ret;
+	}
+	return mcp_encode_plen(buf, sizeof(*buf) + ret, buf_len);
+}
+
+int mcp_decode_pc02(mcp_pc02_t *packet, uint8_t *buf, size_t buf_len,
+	mcp_alloc mcpalloc)
+{
+	return mcp_decode_str(&packet->json_data, buf, buf_len, mcpalloc);
 }
 
 //Play Clientbound 0x03 Time Update
@@ -426,3 +448,48 @@ int mcp_decode_pc04(mcp_pc04_t *packet, uint8_t *buf, size_t buf_len,
 	len += ret;
 	return len;
 }
+
+//Play Clientbound 0x05 Spawn Position
+int mcp_encode_pc05(uint8_t *buf, mcp_pc05_t *packet, size_t buf_len) {
+	if (buf_len < sizeof(*buf) + sizeof(int32_t)*3) {
+		return -1;
+	}
+	*buf = 0x05;
+	size_t len = sizeof(*buf);
+	*(int32_t*)(buf + len) = hton32(packet->x);
+	len += sizeof(packet->x);
+	*(int32_t*)(buf + len) = hton32(packet->y);
+	len += sizeof(packet->y);
+	*(int32_t*)(buf + len) = hton32(packet->z);
+	len += sizeof(packet->z);
+	return mcp_encode_plen(buf, len, buf_len);
+}
+
+int mcp_decode_pc05(mcp_pc05_t *packet, uint8_t *buf, size_t buf_len) {
+	if (buf_len < sizeof(int32_t)*3) {
+		return -1;
+	}
+	size_t len = 0;
+	packet->x = ntoh32(*(int32_t*)(buf + len));
+	len += sizeof(packet->x);
+	packet->y = ntoh32(*(int32_t*)(buf + len));
+	len += sizeof(packet->y);
+	packet->z = ntoh32(*(int32_t*)(buf + len));
+	len += sizeof(packet->z);
+	return len;
+}
+
+//Play Clientbound 0x06 Update Health
+int mcp_encode_pc06(uint8_t *buf, mcp_pc06_t *packet, size_t buf_len) {
+	if (
+		buf_len < sizeof(*buf) + sizeof(packet->health) + 
+		sizeof(packet->food) + sizeof(packet->saturation)
+	) {
+		return -1;
+	}
+	*buf = 0x06
+	size_t len = sizeof(*buf);
+	*(float*)(buf + len) = packet->health;
+	len += sizeof(float);
+}
+int mcp_decode_pc06(mcp_pc06_t *packet, uint8_t *buf, size_t buf_len);

@@ -6,6 +6,19 @@ extern "C" {
 
 //ToDo: Comments/Documentation
 
+int encode_int8(uint8_t *buf, uint8_t num);
+int decode_int8(uint8_t *num, uint8_t *buf);
+int encode_int16(uint8_t *buf, uint16_t num);
+int decode_int16(uint16_t *num, uint8_t *buf);
+int encode_int32(uint8_t *buf, uint32_t num);
+int decode_int32(uint32_t *num, uint8_t *buf);
+int encode_int64(uint8_t *buf, uint64_t num);
+int decode_int64(uint64_t *num, uint8_t *buf);
+int encode_float(uint8_t *buf, float num);
+int decode_float(float *num, uint8_t *buf);
+int encode_double(uint8_t *buf, double num);
+int decode_double(double *num, uint8_t *buf);
+
 typedef void *(*mcp_alloc)(size_t size);
 
 int mcp_encode_varint(uint8_t *buf, int32_t varint, size_t buf_len);
@@ -16,7 +29,7 @@ typedef struct {
 	char *base;
 } mcp_str_t;
 
-int mcp_encode_str(uint8_t *buf, size_t buf_len, mcp_str_t str);
+int mcp_encode_str(uint8_t *buf, mcp_str_t str, size_t buf_len);
 int mcp_decode_str(mcp_str_t *str, uint8_t *buf, size_t buf_len,
 	mcp_alloc mcpalloc);
 
@@ -154,10 +167,13 @@ int mcp_decode_pc01(mcp_pc01_t *packet, uint8_t *buf, size_t buf_len,
 	mcp_alloc mcpalloc);
 
 //Play Clientbound 0x02 Chat Message
-//pc02 is identical to sc00
-#define mcp_pc02_t mcp_sc00_t
-#define mcp_encode_pc02 mcp_encode_sc00
-#define mcp_decode_pc02 mcp_decode_sc00
+typedef struct {
+	mcp_str_t json_data;
+} mcp_pc02_t;
+
+int mcp_encode_pc02(uint8_t *buf, mcp_pc02_t *packet, size_t buf_len);
+int mcp_decode_pc02(mcp_pc02_t *packet, uint8_t *buf, size_t buf_len,
+	mcp_alloc mcpalloc);
 
 //Play Clientbound 0x03 Time Update
 typedef struct {
@@ -185,6 +201,20 @@ typedef struct {
 	int32_t y;
 	int32_t z;
 } mcp_pc05_t;
+
+int mcp_encode_pc05(uint8_t *buf, mcp_pc05_t *packet, size_t buf_len);
+int mcp_decode_pc05(mcp_pc05_t *packet, uint8_t *buf, size_t buf_len);
+
+//Play Clientbound 0x06 Update Float
+typedef struct {
+	float health;
+	int16_t food;
+	float saturation;
+} mcp_pc06_t;
+
+int mcp_encode_pc06(uint8_t *buf, mcp_pc06_t *packet, size_t buf_len);
+int mcp_decode_pc06(mcp_pc06_t *packet, uint8_t *buf, size_t buf_len);
+
 #ifdef __cplusplus
 }
 #endif
