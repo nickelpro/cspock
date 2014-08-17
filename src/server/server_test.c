@@ -13,11 +13,11 @@ typedef struct {
 } server_t;
 
 typedef struct {
-	uint8_t *base;
-	uint8_t *cur;
-	size_t len;
-	size_t used;
-	size_t rem;
+	uint8_t *base;//Base of buffer
+	uint8_t *cur; //Base of unprocessed data
+	size_t len;   //Total length of the buffer
+	size_t used;  //Total used length of the buffer
+	size_t rem;   //Length of unprocessed data
 } client_buf_t;
 
 typedef struct {
@@ -31,8 +31,8 @@ typedef struct {
 
 static mcp_sc00_t status_resp = {
 	.str = {
-		.base = "{\"description\":\"CSPOCK IS ALIVE\",\"players\":{\"max\":1,\"online\":0},\"version\":{\"name\":\"1.7.2\",\"protocol\":4}}",
-	    .len = sizeof("{\"description\":\"CSPOCK IS ALIVE\",\"players\":{\"max\":1,\"online\":0},\"version\":{\"name\":\"1.7.2\",\"protocol\":4}}") - 1
+		.base = "{\"description\":\"CSPOCK IS ALIVE\",\"players\":{\"max\":1,\"online\":0},\"version\":{\"name\":\"1.7.6\",\"protocol\":5}}",
+	    .len = sizeof("{\"description\":\"CSPOCK IS ALIVE\",\"players\":{\"max\":1,\"online\":0},\"version\":{\"name\":\"1.7.6\",\"protocol\":5}}") - 1
 	}
 };
 
@@ -45,15 +45,15 @@ static mcp_lc00_t lolnop = {
 
 static mcp_lc00_t proto_ver_low = {
 	.str = {
-		.base = "\"Outdated client! Please use 1.7.2\"",
-		.len = sizeof("\"Outdated client! Please use 1.7.2\"") - 1
+		.base = "\"Outdated client! Please use 1.7.6\"",
+		.len = sizeof("\"Outdated client! Please use 1.7.6\"") - 1
 	}
 };
 
 static mcp_lc00_t proto_ver_high = {
 	.str = {
-		.base = "\"Outdated server! I'm still on 1.7.2\"",
-		.len = sizeof("\"Outdated server! I'm still on 1.7.2\"") - 1
+		.base = "\"Outdated server! I'm still on 1.7.6\"",
+		.len = sizeof("\"Outdated server! I'm still on 1.7.6\"") - 1
 	}
 };
 
@@ -162,6 +162,7 @@ void server_read_cb(uv_stream_t *tcp, ssize_t nread, const uv_buf_t *buf)
 	client_buf->used += nread;
 	client_buf->rem  += nread;
 	for(;;) {
+		//If not waiting on a packet, decode next packet length
 		if (client->read_len < 0) {
 			ret = mcp_decode_varint(
 				&client->read_len, 

@@ -30,7 +30,7 @@ int mcp_decode_pheader(size_t *size, int32_t *id, uint8_t *buf, size_t buf_len);
 
 
 
-//Handshake
+//Handshake Serverbound 0x00 Handshake
 typedef struct {
 	int32_t protocol_version;
 	mcp_str_t server_addr;
@@ -42,7 +42,7 @@ int mcp_encode_hs00(uint8_t *buf, mcp_hs00_t *packet, size_t buf_len);
 int mcp_decode_hs00(mcp_hs00_t *packet, uint8_t *buf, size_t buf_len,
 	mcp_alloc mcpalloc);
 
-//Status Response
+//Status Clientbound 0x00 Response
 typedef struct {
 	mcp_str_t str;
 } mcp_sc00_t;
@@ -51,7 +51,7 @@ int mcp_encode_sc00(uint8_t *buf, mcp_sc00_t *packet, size_t buf_len);
 int mcp_decode_sc00(mcp_sc00_t *packet, uint8_t *buf, size_t buf_len,
 	mcp_alloc mcpalloc);
 
-//Status Ping
+//Status Clientbound 0x01 Ping
 typedef struct {
 	int64_t ping_time;
 } mcp_sc01_t;
@@ -59,7 +59,7 @@ typedef struct {
 int mcp_encode_sc01(uint8_t *buf, mcp_sc01_t *packet, size_t buf_len);
 int mcp_decode_sc01(mcp_sc01_t *packet, uint8_t *buf, size_t buf_len);
 
-//Status Request
+//Status Serverbound 0x00 Request
 //Technically ss00 is empty, put a void pointer avoid warnings
 //ToDo: ss00 shouldn't need to exist, just put up a warning to
 // do no decode when the packet ID is encountered
@@ -70,19 +70,19 @@ typedef struct {
 int mcp_encode_ss00(uint8_t *buf, mcp_ss00_t *packet, size_t buf_len);
 int mcp_decode_ss00(mcp_ss00_t *packet, uint8_t *buf, size_t buf_len);
 
-//Status Ping
+//Status Serverbound 0x01 Ping
 //ss01 is identical to sc01
 #define mcp_ss01_t mcp_sc01_t
 #define mcp_encode_ss01 mcp_encode_sc01
 #define mcp_decode_ss01 mcp_decode_sc01
 
-//Disconnect
+//Login Clientbound 0x00 Disconnect
 //lc00 is identical to sc00
 #define mcp_lc00_t mcp_sc00_t
 #define mcp_encode_lc00 mcp_encode_sc00
 #define mcp_decode_lc00 mcp_decode_sc00
 
-//Encryption Request
+//Login Clientbound 0x01 Encryption Request
 typedef struct {
 	mcp_str_t server_id;
 	int16_t key_len;
@@ -95,7 +95,7 @@ int mcp_encode_lc01(uint8_t *buf, mcp_lc01_t *packet, size_t buf_len);
 int mcp_decode_lc01(mcp_lc01_t *packet, uint8_t *buf, size_t buf_len,
 	mcp_alloc mcpalloc);
 
-//Login Success
+//Login Clientbound 0x02 Login Success
 typedef struct {
 	mcp_str_t uuid;
 	mcp_str_t username;
@@ -105,13 +105,13 @@ int mcp_encode_lc02(uint8_t *buf, mcp_lc02_t *packet, size_t buf_len);
 int mcp_decode_lc02(mcp_lc02_t *packet, uint8_t *buf, size_t buf_len,
 	mcp_alloc mcpalloc);
 
-//Login Start
+//Login Serverbound 0x00 Login Start
 //ls00 is identical to sc00
 #define mcp_ls00_t mcp_sc00_t
 #define mcp_encode_ls00 mcp_encode_sc00
 #define mcp_decode_ls00 mcp_decode_sc00
 
-//Encryption Response
+//Login Serverbound 0x01 Encryption Response
 typedef struct {
 	int16_t secret_len;
 	uint8_t *shared_secret;
@@ -123,7 +123,7 @@ int mcp_encode_ls01(uint8_t *buf, mcp_ls01_t *packet, size_t buf_len);
 int mcp_decode_ls01(mcp_ls01_t *packet, uint8_t *buf, size_t buf_len,
 	mcp_alloc mcpalloc);
 
-//Keep Alive
+//Play Clientbound 0x00 Keep Alive
 typedef struct {
 	int32_t keep_alive;
 } mcp_pc00_t;
@@ -131,6 +131,7 @@ typedef struct {
 int mcp_encode_pc00(uint8_t *buf, mcp_pc00_t *packet, size_t buf_len);
 int mcp_decode_pc00(mcp_pc00_t *packet, uint8_t *buf, size_t buf_len);
 
+//Play Clientbound 0x01 Join Game
 typedef struct {
 	int32_t eid;
 	uint8_t gamemode;
@@ -138,9 +139,26 @@ typedef struct {
 	uint8_t difficulty;
 	uint8_t max_players;
 	mcp_str_t level_type;
-
 } mcp_pc01_t;
 
+int mcp_encode_pc01(uint8_t *buf, mcp_pc01_t *packet, size_t buf_len);
+int mcp_decode_pc01(mcp_pc01_t *packet, uint8_t *buf, size_t buf_len,
+	mcp_alloc mcpalloc);
+
+//Play Clientbound 0x02 Chat Message
+//pc02 is identical to sc00
+#define mcp_pc02_t mcp_sc00_t
+#define mcp_encode_pc02 mcp_encode_sc00
+#define mcp_decode_pc02 mcp_decode_sc00
+
+//Play Clientbound 0x03 Time Update
+typedef struct {
+	int64_t age_of_world;
+	int64_t time_of_day;
+} mcp_pc03_t;
+
+int mcp_encode_pc03(uint8_t *buf, mcp_pc03_t *packet, size_t buf_len);
+int mcp_decode_pc03(mcp_pc03_t *packet, uint8_t *buf, size_t buf_len);
 
 #ifdef __cplusplus
 }

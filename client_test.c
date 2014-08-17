@@ -28,7 +28,7 @@ static mcp_hs00_t handshake = {
 	.server_addr      = {
 		.base = "127.0.0.1",
 		.len  = sizeof("127.0.0.1")-1
-	}
+	},
 	.server_port      = 25565,
 	.next_state       = 1
 };
