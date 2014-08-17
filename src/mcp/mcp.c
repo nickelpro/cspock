@@ -361,9 +361,9 @@ int mcp_encode_pc03(uint8_t *buf, mcp_pc03_t *packet, size_t buf_len)
 	}
 	*buf = 0x03;
 	size_t len = sizeof(*buf);
-	packet->age_of_world = ntoh64(*(int64_t*)(buf + len));
+	*(int64_t*)(buf + len) = hton64(packet->age_of_world);
 	len += sizeof(packet->age_of_world);
-	packet->time_of_day = ntoh64(*(int64_t*)(buf + len));
+	*(int64_t*)(buf + len) = hton64(packet->time_of_day);
 	len += sizeof(packet->time_of_day);
 	return mcp_encode_plen(buf, len, buf_len);
 }
@@ -374,9 +374,55 @@ int mcp_decode_pc03(mcp_pc03_t *packet, uint8_t *buf, size_t buf_len)
 		return -1;
 	}
 	size_t len = 0;
-	*(int64_t*)(buf + len) = hton64(packet->age_of_world);
+	packet->age_of_world = ntoh64(*(int64_t*)(buf + len));
 	len += sizeof(packet->age_of_world);
-	*(int64_t*)(buf + len) = hton64(packet->time_of_day);
+	packet->time_of_day = ntoh64(*(int64_t*)(buf + len));
 	len += sizeof(packet->time_of_day);
+	return len;
+}
+
+//Play Clientbound 0x04 Entity Equipment
+int mcp_encode_pc04(uint8_t *buf, mcp_pc04_t *packet, size_t buf_len)
+{
+	if (
+		buf_len < sizeof(*buf) + sizeof(packet->eid) + 
+		sizeof(packet->slot_num)
+	) {
+		return -1;
+	}
+	*buf = 0x04;
+	size_t len = sizeof(*buf);
+	*(int32_t*)(buf + len) = hton32(packet->eid);
+	len += sizeof(packet->eid);
+	*(int16_t*)(buf + len) = hton16(packet->slot_num);
+	len += sizeof(packet->slot_num);
+	int ret = mcp_encode_slot(buf + len, packet->item, buf_len - len);
+	if (ret < 0) {
+		return ret;
+	}
+	len += ret;
+	return mcp_encode_plen(buf, len, buf_len);
+}
+
+int mcp_decode_pc04(mcp_pc04_t *packet, uint8_t *buf, size_t buf_len,
+	mcp_alloc mcpalloc)
+{
+	if (
+		buf_len < sizeof(*buf) + sizeof(packet->eid) + 
+		sizeof(packet->slot_num)
+	) {
+		return -1;
+	}
+	size_t len = 0;
+	packet->eid = ntoh32(*(int32_t*)(buf + len));
+	len += sizeof(packet->eid);
+	packet->slot_num = ntoh16(*(int16_t*)(buf_len));
+	len += sizeof(packet->slot_num);
+	int ret = mcp_decode_slot(&packet->item, buf + len, buf_len - len, 
+		mcpalloc);
+	if (ret < 0) {
+		return ret;
+	}
+	len += ret;
 	return len;
 }

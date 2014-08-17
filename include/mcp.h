@@ -6,6 +6,8 @@ extern "C" {
 
 //ToDo: Comments/Documentation
 
+typedef void *(*mcp_alloc)(size_t size);
+
 int mcp_encode_varint(uint8_t *buf, int32_t varint, size_t buf_len);
 int mcp_decode_varint(int32_t *varint, uint8_t *buf, size_t buf_len);
 
@@ -14,20 +16,26 @@ typedef struct {
 	char *base;
 } mcp_str_t;
 
-typedef void *(*mcp_alloc)(size_t size);
-
 int mcp_encode_str(uint8_t *buf, size_t buf_len, mcp_str_t str);
 int mcp_decode_str(mcp_str_t *str, uint8_t *buf, size_t buf_len,
 	mcp_alloc mcpalloc);
 
+typedef struct {
+	int16_t id;
+	int8_t count;
+	int16_t damage;
+	int16_t nbt_len;
+	uint8_t *nbt_base;
+} mcp_slot_t;
+
+int mcp_encode_slot(uint8_t *buf, mcp_slot_t slot, size_t buf_len);
+int mcp_decode_slot(mcp_slot_t *slot, uint8_t *buf, size_t buf_len,
+	mcp_alloc mcpalloc);
+
 int mcp_encode_plen(uint8_t *buf, size_t plen, size_t buf_len);
 
-int mcp_decode_pheader(size_t *size, int32_t *id, uint8_t *buf, size_t buf_len);
-
-
-//NBT
-
-
+int mcp_decode_pheader(size_t *size, int32_t *id, uint8_t *buf,
+	size_t buf_len);
 
 
 //Handshake Serverbound 0x00 Handshake
@@ -160,6 +168,23 @@ typedef struct {
 int mcp_encode_pc03(uint8_t *buf, mcp_pc03_t *packet, size_t buf_len);
 int mcp_decode_pc03(mcp_pc03_t *packet, uint8_t *buf, size_t buf_len);
 
+//Play Clientbound 0x04 Entity Equipment
+typedef struct {
+	int32_t eid;
+	int16_t slot_num;
+	mcp_slot_t item;
+} mcp_pc04_t;
+
+int mcp_encode_pc04(uint8_t *buf, mcp_pc04_t *packet, size_t buf_len);
+int mcp_decode_pc04(mcp_pc04_t *packet, uint8_t *buf, size_t buf_len,
+	mcp_alloc mcpalloc);
+
+//Play Clientbound 0x05 Spawn Position
+typedef struct {
+	int32_t x;
+	int32_t y;
+	int32_t z;
+} mcp_pc05_t;
 #ifdef __cplusplus
 }
 #endif

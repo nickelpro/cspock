@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "mcp.h"
+#include "spocknet.h"
 
 //Occasionally used for debugging, just leave it here until everything matures
 /*
@@ -49,6 +50,7 @@ int mcp_decode_varint(int32_t *varint, uint8_t *buf, size_t buf_len)
 	return ++len;
 }
 
+//Fix this
 int mcp_encode_str(uint8_t *buf, size_t buf_len, mcp_str_t str)
 {
 	int ret = mcp_encode_varint(buf, str.len, buf_len);
@@ -73,6 +75,69 @@ int mcp_decode_str(mcp_str_t *str, uint8_t *buf, size_t buf_len,
 	memcpy(str->base, buf + ret, str->len);
 	return ret + str->len;
 }
+
+int mcp_encode_slot(uint8_t *buf, mcp_slot_t slot, size_t buf_len)
+{
+	if (buf_len < sizeof(slot.id)) {
+		return -1;
+	}
+	*(int16_t*) buf = hton16(slot.id);
+	size_t len = sizeof(slot.id);
+	if (slot.id == -1) {
+		return len;
+	} else if (
+		buf_len < len + sizeof(slot.count) + sizeof(slot.damage) +
+		sizeof(slot.nbt_len) + slot.nbt_len
+	) {
+		return -1;
+	}
+	*(buf + len) = slot.count;
+	len += sizeof(slot.count);
+	*(int16_t*)(buf + len) = hton16(slot.damage);
+	len += sizeof(slot.damage);
+	*(int16_t*)(buf + len) = hton16(slot.nbt_len);
+	len += sizeof(slot.nbt_len);
+	memcpy(buf + len, slot.nbt_base, slot.nbt_len);
+	len += slot.nbt_len;
+	return len;
+}
+
+//ToDo: Error check mcpalloc
+int mcp_decode_slot(mcp_slot_t *slot, uint8_t *buf, size_t buf_len,
+	mcp_alloc mcpalloc)
+{
+	if (buf_len < sizeof(slot->id)) {
+		return -1;
+	}
+	slot->id = ntoh16(*(int16_t*) buf);
+	size_t len = sizeof(slot->id);
+	if (slot->id == -1) {
+		slot->count = -1;
+		slot->damage = -1;
+		slot->nbt_len = -1;
+		slot->nbt_base = NULL;
+		return len;
+	} else if (
+		buf_len < len + sizeof(slot->count) + sizeof(slot->damage) +
+		sizeof(slot->nbt_len)
+	) {
+		return -1;
+	}
+	slot->count = *(buf + len);
+	len += sizeof(slot->count);
+	slot->damage = ntoh16(*(int16_t*)(buf + len));
+	len += sizeof(slot->damage);
+	slot->nbt_len = ntoh16(*(int16_t*)(buf + len));
+	len += sizeof(slot->nbt_len);
+	if (buf_len < len + slot->nbt_len) {
+		return -1;
+	}
+	slot->nbt_base = mcpalloc(slot->nbt_len);
+	memcpy(slot->nbt_base, buf + len, slot->nbt_len);
+	len += slot->nbt_len;
+	return len;
+}
+
 
 int mcp_encode_plen(uint8_t *buf, size_t plen, size_t buf_len) 
 {
