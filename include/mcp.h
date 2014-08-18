@@ -248,6 +248,26 @@ typedef struct {
 int mcp_encode_pc09(uint8_t *buf, mcp_pc09_t *packet, size_t buf_len);
 int mcp_decode_pc09(mcp_pc09_t *packet, uint8_t *buf, size_t buf_len);
 
+//Play Clientbound 0x0A Use Bed
+typedef struct {
+	int32_t eid;
+	int32_t x;
+	uint8_t y;
+	int32_t z;
+} mcp_pc0A_t;
+
+int mcp_encode_pc0A(uint8_t *buf, mcp_pc0A_t *packet, size_t buf_len);
+int mcp_decode_pc0A(mcp_pc0A_t *packet, uint8_t *buf, size_t buf_len);
+
+//Play Clientbound 0x0B Animation
+typedef struct {
+	int32_t eid;
+	uint8_t animation;
+} mcp_pc0B_t;
+
+int mcp_encode_pc0B(uint8_t *buf, mcp_pc0B_t *packet, size_t buf_len);
+int mcp_decode_pc0B(mcp_pc0B_t *packet, uint8_t *buf, size_t buf_len);
+
 #ifdef __cplusplus
 }
 #endif

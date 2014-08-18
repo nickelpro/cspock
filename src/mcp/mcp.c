@@ -416,7 +416,8 @@ int mcp_decode_pc04(mcp_pc04_t *packet, uint8_t *buf, size_t buf_len,
 }
 
 //Play Clientbound 0x05 Spawn Position
-int mcp_encode_pc05(uint8_t *buf, mcp_pc05_t *packet, size_t buf_len) {
+int mcp_encode_pc05(uint8_t *buf, mcp_pc05_t *packet, size_t buf_len)
+{
 	if (buf_len < sizeof(*buf) + sizeof(int32_t)*3) {
 		return -1;
 	}
@@ -427,7 +428,8 @@ int mcp_encode_pc05(uint8_t *buf, mcp_pc05_t *packet, size_t buf_len) {
 	return mcp_encode_plen(buf, len, buf_len);
 }
 
-int mcp_decode_pc05(mcp_pc05_t *packet, uint8_t *buf, size_t buf_len) {
+int mcp_decode_pc05(mcp_pc05_t *packet, uint8_t *buf, size_t buf_len)
+{
 	if (buf_len < sizeof(int32_t)*3) {
 		return -1;
 	}
@@ -439,7 +441,8 @@ int mcp_decode_pc05(mcp_pc05_t *packet, uint8_t *buf, size_t buf_len) {
 }
 
 //Play Clientbound 0x06 Update Health
-int mcp_encode_pc06(uint8_t *buf, mcp_pc06_t *packet, size_t buf_len) {
+int mcp_encode_pc06(uint8_t *buf, mcp_pc06_t *packet, size_t buf_len)
+{
 	if (
 		buf_len < sizeof(*buf) + sizeof(packet->health) + 
 		sizeof(packet->food) + sizeof(packet->saturation)
@@ -452,7 +455,8 @@ int mcp_encode_pc06(uint8_t *buf, mcp_pc06_t *packet, size_t buf_len) {
 	len += mcp_encode_float(buf + len, packet->saturation);
 	return mcp_encode_plen(buf, len, buf_len);
 }
-int mcp_decode_pc06(mcp_pc06_t *packet, uint8_t *buf, size_t buf_len) {
+int mcp_decode_pc06(mcp_pc06_t *packet, uint8_t *buf, size_t buf_len)
+{
 	if (
 		buf_len < sizeof(packet->health) + sizeof(packet->food) + 
 		sizeof(packet->saturation)
@@ -515,7 +519,7 @@ int mcp_encode_pc08(uint8_t *buf, mcp_pc08_t *packet, size_t buf_len)
 	if (buf_len < sizeof(double)*3 + sizeof(float)*2 + sizeof(uint8_t)*2) {
 		return -1;
 	}
-	len = mcp_encode_int8(buf, 0x08);
+	size_t len = mcp_encode_int8(buf, 0x08);
 	len += mcp_encode_double(buf + len, packet->x);
 	len += mcp_encode_double(buf + len, packet->y);
 	len += mcp_encode_double(buf + len, packet->z);
@@ -525,7 +529,8 @@ int mcp_encode_pc08(uint8_t *buf, mcp_pc08_t *packet, size_t buf_len)
 	return mcp_encode_plen(buf, len, buf_len);
 }
 
-int mcp_decode_pc08(mcp_pc08_t *packet, uint8_t *buf, size_t buf_len) {
+int mcp_decode_pc08(mcp_pc08_t *packet, uint8_t *buf, size_t buf_len)
+{
 	if (buf_len < sizeof(double)*3 + sizeof(float)*2 + sizeof(uint8_t)) {
 		return -1;
 	}
@@ -540,7 +545,8 @@ int mcp_decode_pc08(mcp_pc08_t *packet, uint8_t *buf, size_t buf_len) {
 }
 
 //Play Clientbound 0x09 Held Item Change
-int mcp_encode_pc09(uint8_t *buf, mcp_pc09_t *packet, size_t buf_len) {
+int mcp_encode_pc09(uint8_t *buf, mcp_pc09_t *packet, size_t buf_len)
+{
 	if (buf_len < sizeof(uint8_t)*2) {
 		return -1;
 	}
@@ -549,7 +555,8 @@ int mcp_encode_pc09(uint8_t *buf, mcp_pc09_t *packet, size_t buf_len) {
 	return mcp_encode_plen(buf, len, buf_len);
 }
 
-int mcp_decode_pc09(mcp_pc09_t *packet, uint8_t *buf, size_t buf_len) {
+int mcp_decode_pc09(mcp_pc09_t *packet, uint8_t *buf, size_t buf_len)
+{
 	if (buf_len < sizeof(uint8_t)) {
 		return -1;
 	}
@@ -557,3 +564,61 @@ int mcp_decode_pc09(mcp_pc09_t *packet, uint8_t *buf, size_t buf_len) {
 	return len;
 }
 
+//Play Clientbound 0x0A Use Bed
+int mcp_encode_pc0A(uint8_t *buf, mcp_pc0A_t *packet, size_t buf_len)
+{
+	if (buf_len < sizeof(int32_t)*3 + sizeof(uint8_t)*2) {
+		return -1;
+	}
+	size_t len = mcp_encode_int8(buf, 0x0A);
+	len += mcp_encode_int32(buf + len, packet->eid);
+	len += mcp_encode_int32(buf + len, packet->x);
+	len += mcp_encode_int8(buf + len, packet->y);
+	len += mcp_encode_int32(buf + len, packet->z);
+	return mcp_encode_plen(buf, len, buf_len);
+}
+
+int mcp_decode_pc0A(mcp_pc0A_t *packet, uint8_t *buf, size_t buf_len)
+{
+	if (buf_len < sizeof(int32_t)*3 + sizeof(uint8_t)) {
+		return -1;
+	}
+	size_t len = 0;
+	len += mcp_decode_int32(&packet->eid, buf + len);
+	len += mcp_decode_int32(&packet->x, buf + len);
+	len += mcp_decode_int8(&packet->y, buf + len);
+	len += mcp_decode_int32(&packet->z, buf + len);
+	return len;
+}
+
+//Play Clientbound 0x0B Animation
+int mcp_encode_pc0B(uint8_t *buf, mcp_pc0B_t *packet, size_t buf_len)
+{
+	if (buf_len < sizeof(uint8_t)*2) {
+		return -1;
+	}
+	size_t len = mcp_encode_int8(buf, 0x0B);
+	int ret = mcp_encode_varint(buf + len, packet->eid, buf_len - len);
+	if (ret < 0) {
+		return ret;
+	} else if (buf_len < len + ret + sizeof(uint8_t)) {
+		return -1;
+	}
+	len += ret;
+	len += mcp_encode_int8(buf + len, packet->animation);
+	return mcp_encode_plen(buf, len, buf_len);
+}
+
+int mcp_decode_pc0B(mcp_pc0B_t *packet, uint8_t *buf, size_t buf_len)
+{
+	size_t len = 0;
+	int ret = mcp_decode_varint(&packet->eid, buf + len, buf_len - len);
+	if (ret < 0) {
+		return ret;
+	} else if (buf_len < ret + sizeof(uint8_t)) {
+		return -1;
+	}
+	len += ret;
+	len += mcp_decode_int8(&packet->animation, buf + len);
+	return len;
+}
