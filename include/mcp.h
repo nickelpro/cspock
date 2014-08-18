@@ -6,18 +6,19 @@ extern "C" {
 
 //ToDo: Comments/Documentation
 
-int encode_int8(uint8_t *buf, uint8_t num);
-int decode_int8(uint8_t *num, uint8_t *buf);
-int encode_int16(uint8_t *buf, uint16_t num);
-int decode_int16(uint16_t *num, uint8_t *buf);
-int encode_int32(uint8_t *buf, uint32_t num);
-int decode_int32(uint32_t *num, uint8_t *buf);
-int encode_int64(uint8_t *buf, uint64_t num);
-int decode_int64(uint64_t *num, uint8_t *buf);
-int encode_float(uint8_t *buf, float num);
-int decode_float(float *num, uint8_t *buf);
-int encode_double(uint8_t *buf, double num);
-int decode_double(double *num, uint8_t *buf);
+//Void pointers for int decode because GCC throws a hissy fit over signnedness
+int mcp_encode_int8(uint8_t *buf, uint8_t num);
+int mcp_decode_int8(void *num, uint8_t *buf);
+int mcp_encode_int16(uint8_t *buf, uint16_t num);
+int mcp_decode_int16(void *num, uint8_t *buf);
+int mcp_encode_int32(uint8_t *buf, uint32_t num);
+int mcp_decode_int32(void *num, uint8_t *buf);
+int mcp_encode_int64(uint8_t *buf, uint64_t num);
+int mcp_decode_int64(void *num, uint8_t *buf);
+int mcp_encode_float(uint8_t *buf, float num);
+int mcp_decode_float(float *num, uint8_t *buf);
+int mcp_encode_double(uint8_t *buf, double num);
+int mcp_decode_double(double *num, uint8_t *buf);
 
 typedef void *(*mcp_alloc)(size_t size);
 

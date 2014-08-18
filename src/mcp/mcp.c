@@ -9,8 +9,7 @@ int mcp_encode_hs00(uint8_t *buf, mcp_hs00_t *packet, size_t buf_len)
 	if (buf_len < sizeof(*buf)) {
 		return -1;
 	}
-	*buf = 0x00;
-	size_t len = sizeof(*buf);
+	size_t len = mcp_encode_int8(buf, 0x00);
 	int ret;
 	ret = mcp_encode_varint(buf + len, packet->protocol_version,
 		buf_len - len);
@@ -23,13 +22,14 @@ int mcp_encode_hs00(uint8_t *buf, mcp_hs00_t *packet, size_t buf_len)
 		return ret;
 	}
 	len += ret;
-	if (buf_len - len < sizeof(packet->server_port) + sizeof(*buf)) {
+	if (
+		buf_len < len + sizeof(packet->server_port) + 
+		sizeof(packet->next_state)
+	) {
 		return -1;
 	}
-	*(uint16_t*)(buf + len) = hton16(packet->server_port);
-	len += sizeof(packet->server_port);
-	*(buf + len) = packet->next_state;
-	len += sizeof(packet->next_state);
+	len += mcp_encode_int16(buf + len, packet->server_port);
+	len += mcp_encode_int8(buf + len, packet->next_state);
 	return mcp_encode_plen(buf, len, buf_len);
 }
 
@@ -50,13 +50,11 @@ int mcp_decode_hs00(mcp_hs00_t *packet, uint8_t *buf, size_t buf_len,
 		return ret;
 	}
 	len += ret;
-	if (buf_len < len + sizeof(packet->server_port)) {
+	if (buf_len < len + sizeof(packet->server_port) + sizeof(packet->next_state)) {
 		return -1;
 	}
-	packet->server_port = ntoh16(*(uint16_t*)(buf + len));
-	len += sizeof(packet->server_port);
-	packet->next_state = *(buf + len);
-	len += sizeof(packet->next_state);
+	len += mcp_decode_int16(&packet->server_port, buf + len);
+	len += mcp_decode_int8(&packet->next_state, buf + len);
 	return len;
 }
 
@@ -66,14 +64,15 @@ int mcp_encode_sc00(uint8_t *buf, mcp_sc00_t *packet, size_t buf_len)
 	if (buf_len < sizeof(*buf)) {
 		return -1;
 	}
-	*buf = 0x00;
+	size_t len = mcp_encode_int8(buf, 0x00);
 	int ret;
-	ret = mcp_encode_str(buf + sizeof(*buf), packet->str,
-		buf_len - sizeof(*buf));
+	ret = mcp_encode_str(buf + len, packet->str,
+		buf_len - len);
 	if (ret < 0) {
 		return ret;
 	}
-	return mcp_encode_plen(buf, sizeof(*buf) + ret, buf_len);
+	len += ret;
+	return mcp_encode_plen(buf, len, buf_len);
 }
 
 int mcp_decode_sc00(mcp_sc00_t *packet, uint8_t *buf, size_t buf_len,
@@ -88,10 +87,9 @@ int mcp_encode_sc01(uint8_t *buf, mcp_sc01_t *packet, size_t buf_len)
 	if (buf_len < sizeof(*buf) + sizeof(packet->ping_time)) {
 		return -1;
 	}
-	*buf = 0x01;
-	*(int64_t*)(buf + sizeof(*buf)) = hton64(packet->ping_time);
-	return mcp_encode_plen(buf, sizeof(*buf) + sizeof(packet->ping_time),
-		buf_len);
+	size_t len = mcp_encode_int8(buf, 0x01);
+	len += mcp_encode_int64(buf + len, packet->ping_time);
+	return mcp_encode_plen(buf, len, buf_len);
 }
 
 int mcp_decode_sc01(mcp_sc01_t *packet, uint8_t *buf, size_t buf_len)
@@ -99,8 +97,8 @@ int mcp_decode_sc01(mcp_sc01_t *packet, uint8_t *buf, size_t buf_len)
 	if (buf_len < sizeof(packet->ping_time)) {
 		return -1;
 	}
-	packet->ping_time = ntoh64(*(int64_t*) buf);
-	return sizeof(packet->ping_time);
+	size_t len = mcp_decode_int64(&packet->ping_time, buf);
+	return len;
 }
 
 //Status Serverbound 0x00 Request
@@ -109,8 +107,8 @@ int mcp_encode_ss00(uint8_t *buf, mcp_ss00_t *packet, size_t buf_len)
 	if (buf_len < sizeof(*buf)) {
 		return -1;
 	}
-	*buf = 0x00;
-	return mcp_encode_plen(buf, sizeof(*buf), buf_len);
+	size_t len = mcp_encode_int8(buf, 0x00);
+	return mcp_encode_plen(buf, len, buf_len);
 }
 
 int mcp_decode_ss00(mcp_ss00_t *packet, uint8_t *buf, size_t buf_len)
@@ -124,8 +122,7 @@ int mcp_encode_lc01(uint8_t *buf, mcp_lc01_t *packet, size_t buf_len)
 	if (buf_len < sizeof(*buf)) {
 		return -1;
 	}
-	*buf = 0x01;
-	size_t len = sizeof(*buf);
+	size_t len = mcp_encode_int8(buf, 0x01);
 	int ret;
 	ret = mcp_encode_str(buf + len, packet->server_id, buf_len - len);
 	if (ret < 0) {
@@ -135,12 +132,10 @@ int mcp_encode_lc01(uint8_t *buf, mcp_lc01_t *packet, size_t buf_len)
 		return -1;
 	}
 	len += ret;
-	*(int16_t*)(buf + len) = hton16(packet->key_len);
-	len += sizeof(packet->key_len);
+	len += mcp_encode_int16(buf + len, packet->key_len);
 	memcpy(buf + len, packet->pub_key, packet->key_len);
 	len += packet->key_len;
-	*(int16_t*)(buf + len) = hton16(packet->token_len);
-	len += sizeof(packet->token_len);
+	len += mcp_encode_int16(buf + len, packet->token_len);
 	memcpy(buf + len, packet->verify_token, packet->token_len);
 	len += packet->token_len;
 	return mcp_encode_plen(buf, len, buf_len);
@@ -159,8 +154,7 @@ int mcp_decode_lc01(mcp_lc01_t *packet, uint8_t *buf, size_t buf_len,
 	if (buf_len < len + sizeof(packet->key_len)) {
 		return -1;
 	}
-	packet->key_len = ntoh16(*(uint16_t*)(buf + len));
-	len += sizeof(packet->key_len);
+	len += mcp_decode_int16(&packet->key_len, buf + len);
 	if (buf_len < len + packet->key_len) {
 		return -1;
 	}
@@ -170,8 +164,7 @@ int mcp_decode_lc01(mcp_lc01_t *packet, uint8_t *buf, size_t buf_len,
 	if (buf_len < len + sizeof(packet->token_len)) {
 		return -1;
 	}
-	packet->token_len = ntoh16(*(uint16_t*)(buf + len));
-	len += sizeof(packet->token_len);
+	len += mcp_decode_int16(&packet->token_len, buf + len);
 	if (buf_len < len + packet->token_len) {
 		return -1;
 	}
@@ -187,8 +180,7 @@ int mcp_encode_lc02(uint8_t *buf, mcp_lc02_t *packet, size_t buf_len)
 	if (buf_len < sizeof(*buf)) {
 		return -1;
 	}
-	*buf = 0x02;
-	size_t len = sizeof(*buf);
+	size_t len = mcp_encode_int8(buf, 0x02);
 	int ret;
 	ret = mcp_encode_str(buf + len, packet->uuid, buf_len - len);
 	if (ret < 0) {
@@ -228,14 +220,11 @@ int mcp_encode_ls01(uint8_t *buf, mcp_ls01_t *packet, size_t buf_len) {
 		sizeof(packet->secret_len) + sizeof(packet->token_len)) {
 		return -1;
 	}
-	*buf = 0x01;
-	size_t len = sizeof(*buf);
-	*(int16_t*)(buf + len) = hton16(packet->secret_len);
-	len += sizeof(packet->secret_len);
+	size_t len = mcp_encode_int8(buf, 0x01);
+	len += mcp_encode_int16(buf + len, packet->secret_len);
 	memcpy(buf + len, packet->shared_secret, packet->secret_len);
 	len += packet->secret_len;
-	*(int16_t*)(buf + len) = hton16(packet->token_len);
-	len += sizeof(packet->token_len);
+	len += mcp_encode_int16(buf + len, packet->token_len);
 	memcpy(buf + len, packet->verify_token, packet->token_len);
 	len += packet->token_len;
 	return mcp_encode_plen(buf, len, buf_len);
@@ -248,8 +237,7 @@ int mcp_decode_ls01(mcp_ls01_t *packet, uint8_t *buf, size_t buf_len,
 	if (buf_len < len + sizeof(packet->secret_len)) {
 		return -1;
 	}
-	packet->secret_len = ntoh16(*(uint16_t*)(buf + len));
-	len += sizeof(packet->secret_len);
+	len += mcp_decode_int16(&packet->secret_len, buf + len);
 	if (buf_len < len + packet->secret_len) {
 		return -1;
 	}
@@ -259,8 +247,7 @@ int mcp_decode_ls01(mcp_ls01_t *packet, uint8_t *buf, size_t buf_len,
 	if (buf_len < len + sizeof(packet->token_len)) {
 		return -1;
 	}
-	packet->token_len = ntoh16(*(uint16_t*)(buf + len));
-	len += sizeof(packet->token_len);
+	len += mcp_decode_int16(&packet->token_len, buf + len);
 	if (buf_len < len + packet->token_len) {
 		return -1;
 	}
@@ -276,10 +263,8 @@ int mcp_encode_pc00(uint8_t *buf, mcp_pc00_t *packet, size_t buf_len)
 	if (buf_len < sizeof(*buf) + sizeof(packet->keep_alive)) {
 		return -1;
 	}
-	*buf = 0x00;
-	size_t len = sizeof(*buf);
-	*(int32_t*)(buf + len) = hton32(packet->keep_alive);
-	len += sizeof(packet->keep_alive);
+	size_t len = mcp_encode_int8(buf, 0x00);
+	len += mcp_encode_int32(buf + len, packet->keep_alive);
 	return mcp_encode_plen(buf, len, buf_len);
 
 }
@@ -289,7 +274,7 @@ int mcp_decode_pc00(mcp_pc00_t *packet, uint8_t *buf, size_t buf_len)
 	if (buf_len < sizeof(packet->keep_alive)) {
 		return -1;
 	}
-	packet->keep_alive = ntoh32(*(int32_t*) buf);
+	mcp_decode_int32(&packet->keep_alive, buf);
 	return sizeof(packet->keep_alive);
 }
 
@@ -299,21 +284,15 @@ int mcp_encode_pc01(uint8_t *buf, mcp_pc01_t *packet, size_t buf_len)
 	if (
 		buf_len < sizeof(*buf) + sizeof(packet->eid) +
 		sizeof(packet->gamemode) + sizeof(packet->dimension) +
-		sizeof(packet->difficulty) + sizeof(packet->max_players) +
-		packet->level_type.len
+		sizeof(packet->difficulty) + sizeof(packet->max_players)
 	) {
 		return -1;
 	}
-	*buf = 0x01;
-	size_t len = sizeof(*buf);
-	*(int32_t*)(buf + len) = hton32(packet->eid);
-	len += sizeof(packet->eid);
-	*(buf + len) = packet->gamemode;
-	len += sizeof(packet->gamemode);
-	*(buf + len) = packet->difficulty;
-	len += sizeof(packet->difficulty);
-	*(buf + len) = packet->max_players;
-	len += sizeof(packet->max_players);
+	size_t len = mcp_encode_int8(buf, 0x01);
+	len += mcp_encode_int32(buf + len, packet->eid);
+	len += mcp_encode_int8(buf + len, packet->gamemode);
+	len += mcp_encode_int8(buf + len, packet->difficulty);
+	len += mcp_encode_int8(buf + len, packet->max_players);
 	int ret = mcp_encode_str(buf + len, packet->level_type, buf_len - len);
 	if (ret < 0) {
 		return ret;
@@ -333,14 +312,10 @@ int mcp_decode_pc01(mcp_pc01_t *packet, uint8_t *buf, size_t buf_len,
 		return -1;
 	}
 	size_t len = 0;
-	packet->eid = ntoh32(*(int32_t*)(buf + len));
-	len += sizeof(packet->eid);
-	packet->gamemode = *(buf + len);
-	len += sizeof(packet->gamemode);
-	packet->difficulty = *(buf + len);
-	len += sizeof(packet->difficulty);
-	packet->max_players = *(buf + len);
-	len += sizeof(packet->max_players);
+	len += mcp_decode_int32(&packet->eid, buf + len);
+	len += mcp_decode_int8(&packet->gamemode, buf + len);
+	len += mcp_decode_int8(&packet->difficulty, buf + len);
+	len += mcp_decode_int8(&packet->max_players, buf + len);
 	int ret = mcp_decode_str(&packet->level_type, buf + len, buf_len - len,
 		mcpalloc);
 	if (ret < 0) {
@@ -356,14 +331,15 @@ int mcp_encode_pc02(uint8_t *buf, mcp_pc02_t *packet, size_t buf_len)
 	if (buf_len < sizeof(*buf)) {
 		return -1;
 	}
-	*buf = 0x00;
+	size_t len = mcp_encode_int8(buf, 0x02);
 	int ret;
 	ret = mcp_encode_str(buf + sizeof(*buf), packet->json_data,
 		buf_len - sizeof(*buf));
 	if (ret < 0) {
 		return ret;
 	}
-	return mcp_encode_plen(buf, sizeof(*buf) + ret, buf_len);
+	len += ret;
+	return mcp_encode_plen(buf, len, buf_len);
 }
 
 int mcp_decode_pc02(mcp_pc02_t *packet, uint8_t *buf, size_t buf_len,
@@ -381,12 +357,9 @@ int mcp_encode_pc03(uint8_t *buf, mcp_pc03_t *packet, size_t buf_len)
 	) {
 		return -1;
 	}
-	*buf = 0x03;
-	size_t len = sizeof(*buf);
-	*(int64_t*)(buf + len) = hton64(packet->age_of_world);
-	len += sizeof(packet->age_of_world);
-	*(int64_t*)(buf + len) = hton64(packet->time_of_day);
-	len += sizeof(packet->time_of_day);
+	size_t len = mcp_encode_int8(buf, 0x03);
+	len += mcp_encode_int64(buf + len, packet->age_of_world);
+	len += mcp_encode_int64(buf + len, packet->time_of_day);
 	return mcp_encode_plen(buf, len, buf_len);
 }
 
@@ -396,10 +369,8 @@ int mcp_decode_pc03(mcp_pc03_t *packet, uint8_t *buf, size_t buf_len)
 		return -1;
 	}
 	size_t len = 0;
-	packet->age_of_world = ntoh64(*(int64_t*)(buf + len));
-	len += sizeof(packet->age_of_world);
-	packet->time_of_day = ntoh64(*(int64_t*)(buf + len));
-	len += sizeof(packet->time_of_day);
+	len += mcp_decode_int64(&packet->age_of_world, buf + len);
+	len += mcp_decode_int64(&packet->time_of_day, buf + len);
 	return len;
 }
 
@@ -412,12 +383,9 @@ int mcp_encode_pc04(uint8_t *buf, mcp_pc04_t *packet, size_t buf_len)
 	) {
 		return -1;
 	}
-	*buf = 0x04;
-	size_t len = sizeof(*buf);
-	*(int32_t*)(buf + len) = hton32(packet->eid);
-	len += sizeof(packet->eid);
-	*(int16_t*)(buf + len) = hton16(packet->slot_num);
-	len += sizeof(packet->slot_num);
+	size_t len = mcp_encode_int8(buf, 0x04);
+	len += mcp_encode_int32(buf + len, packet->eid);
+	len += mcp_encode_int16(buf + len, packet->slot_num);
 	int ret = mcp_encode_slot(buf + len, packet->item, buf_len - len);
 	if (ret < 0) {
 		return ret;
@@ -436,10 +404,8 @@ int mcp_decode_pc04(mcp_pc04_t *packet, uint8_t *buf, size_t buf_len,
 		return -1;
 	}
 	size_t len = 0;
-	packet->eid = ntoh32(*(int32_t*)(buf + len));
-	len += sizeof(packet->eid);
-	packet->slot_num = ntoh16(*(int16_t*)(buf_len));
-	len += sizeof(packet->slot_num);
+	len += mcp_decode_int32(&packet->eid, buf + len);
+	len += mcp_decode_int16(&packet->slot_num, buf + len);
 	int ret = mcp_decode_slot(&packet->item, buf + len, buf_len - len, 
 		mcpalloc);
 	if (ret < 0) {
@@ -454,14 +420,10 @@ int mcp_encode_pc05(uint8_t *buf, mcp_pc05_t *packet, size_t buf_len) {
 	if (buf_len < sizeof(*buf) + sizeof(int32_t)*3) {
 		return -1;
 	}
-	*buf = 0x05;
-	size_t len = sizeof(*buf);
-	*(int32_t*)(buf + len) = hton32(packet->x);
-	len += sizeof(packet->x);
-	*(int32_t*)(buf + len) = hton32(packet->y);
-	len += sizeof(packet->y);
-	*(int32_t*)(buf + len) = hton32(packet->z);
-	len += sizeof(packet->z);
+	size_t len = mcp_encode_int8(buf, 0x05);
+	len += mcp_encode_int32(buf + len, packet->x);
+	len += mcp_encode_int32(buf + len, packet->y);
+	len += mcp_encode_int32(buf + len, packet->z);
 	return mcp_encode_plen(buf, len, buf_len);
 }
 
@@ -470,12 +432,9 @@ int mcp_decode_pc05(mcp_pc05_t *packet, uint8_t *buf, size_t buf_len) {
 		return -1;
 	}
 	size_t len = 0;
-	packet->x = ntoh32(*(int32_t*)(buf + len));
-	len += sizeof(packet->x);
-	packet->y = ntoh32(*(int32_t*)(buf + len));
-	len += sizeof(packet->y);
-	packet->z = ntoh32(*(int32_t*)(buf + len));
-	len += sizeof(packet->z);
+	len += mcp_decode_int32(&packet->x, buf + len);
+	len += mcp_decode_int32(&packet->y, buf + len);
+	len += mcp_decode_int32(&packet->z, buf + len);
 	return len;
 }
 
@@ -487,9 +446,22 @@ int mcp_encode_pc06(uint8_t *buf, mcp_pc06_t *packet, size_t buf_len) {
 	) {
 		return -1;
 	}
-	*buf = 0x06
-	size_t len = sizeof(*buf);
-	*(float*)(buf + len) = packet->health;
-	len += sizeof(float);
+	size_t len = mcp_encode_int8(buf, 0x06);
+	len += mcp_encode_float(buf + len, packet->health);
+	len += mcp_encode_int16(buf + len, packet->food);
+	len += mcp_encode_float(buf + len, packet->saturation);
+	return mcp_encode_plen(buf, len, buf_len);
 }
-int mcp_decode_pc06(mcp_pc06_t *packet, uint8_t *buf, size_t buf_len);
+int mcp_decode_pc06(mcp_pc06_t *packet, uint8_t *buf, size_t buf_len) {
+	if (
+		buf_len < sizeof(packet->health) + sizeof(packet->food) + 
+		sizeof(packet->saturation)
+	) {
+		return -1;
+	}
+	size_t len = 0;
+	len += mcp_decode_float(&packet->health, buf + len);
+	len += mcp_decode_int16(&packet->food, buf + len);
+	len += mcp_decode_float(&packet->saturation, buf + len);
+	return len;
+}
