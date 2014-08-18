@@ -465,3 +465,95 @@ int mcp_decode_pc06(mcp_pc06_t *packet, uint8_t *buf, size_t buf_len) {
 	len += mcp_decode_float(&packet->saturation, buf + len);
 	return len;
 }
+
+//Play Clientbound 0x07 Respawn
+int mcp_encode_pc07(uint8_t *buf, mcp_pc07_t *packet, size_t buf_len)
+{
+	if (
+		buf_len < sizeof(packet->dimension) + sizeof(packet->difficulty) +
+		sizeof(packet->gamemode)
+	) {
+		return -1;
+	}
+	size_t len = mcp_encode_int8(buf, 0x07);
+	len += mcp_encode_int32(buf + len, packet->dimension);
+	len += mcp_encode_int8(buf + len, packet->difficulty);
+	len += mcp_encode_int8(buf + len, packet->gamemode);
+	int ret = mcp_encode_str(buf + len, packet->level_type, buf_len - len);
+	if (ret < 0) {
+		return ret;
+	}
+	len += ret;
+	return mcp_encode_plen(buf, len, buf_len);
+}
+
+int mcp_decode_pc07(mcp_pc07_t *packet, uint8_t *buf, size_t buf_len,
+	mcp_alloc mcpalloc)
+{
+	if (
+		buf_len < sizeof(packet->dimension) + sizeof(packet->difficulty) +
+		sizeof(packet->gamemode)
+	) {
+		return -1;
+	}
+	size_t len = 0;
+	len += mcp_decode_int32(&packet->dimension, buf + len);
+	len += mcp_decode_int8(&packet->difficulty, buf + len);
+	len += mcp_decode_int8(&packet->gamemode, buf + len);
+	int ret = mcp_decode_str(&packet->level_type, buf + len, buf_len - len,
+		mcpalloc);
+	if (ret < 0) {
+		return ret;
+	}
+	len += ret;
+	return len;
+}
+
+//Play Clientbound 0x08 Player Position and Look
+int mcp_encode_pc08(uint8_t *buf, mcp_pc08_t *packet, size_t buf_len)
+{
+	if (buf_len < sizeof(double)*3 + sizeof(float)*2 + sizeof(uint8_t)*2) {
+		return -1;
+	}
+	len = mcp_encode_int8(buf, 0x08);
+	len += mcp_encode_double(buf + len, packet->x);
+	len += mcp_encode_double(buf + len, packet->y);
+	len += mcp_encode_double(buf + len, packet->z);
+	len += mcp_encode_float(buf + len, packet->yaw);
+	len += mcp_encode_float(buf + len, packet->pitch);
+	len += mcp_encode_int8(buf + len, packet->on_ground);
+	return mcp_encode_plen(buf, len, buf_len);
+}
+
+int mcp_decode_pc08(mcp_pc08_t *packet, uint8_t *buf, size_t buf_len) {
+	if (buf_len < sizeof(double)*3 + sizeof(float)*2 + sizeof(uint8_t)) {
+		return -1;
+	}
+	size_t len = 0;
+	len += mcp_decode_double(&packet->x, buf + len);
+	len += mcp_decode_double(&packet->y, buf + len);
+	len += mcp_decode_double(&packet->z, buf + len);
+	len += mcp_decode_float(&packet->yaw, buf + len);
+	len += mcp_decode_float(&packet->pitch, buf + len);
+	len += mcp_decode_int8(&packet->on_ground, buf + len);
+	return len;
+}
+
+//Play Clientbound 0x09 Held Item Change
+int mcp_encode_pc09(uint8_t *buf, mcp_pc09_t *packet, size_t buf_len) {
+	if (buf_len < sizeof(uint8_t)*2) {
+		return -1;
+	}
+	size_t len = mcp_encode_int8(buf, 0x09);
+	len += mcp_encode_int8(buf + len, packet->slot_num);
+	return mcp_encode_plen(buf, len, buf_len);
+}
+
+int mcp_decode_pc09(mcp_pc09_t *packet, uint8_t *buf, size_t buf_len) {
+	if (buf_len < sizeof(uint8_t)) {
+		return -1;
+	}
+	size_t len = mcp_decode_int8(&packet->slot_num, buf);
+	return len;
+}
+

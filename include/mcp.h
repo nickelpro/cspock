@@ -205,7 +205,7 @@ typedef struct {
 int mcp_encode_pc05(uint8_t *buf, mcp_pc05_t *packet, size_t buf_len);
 int mcp_decode_pc05(mcp_pc05_t *packet, uint8_t *buf, size_t buf_len);
 
-//Play Clientbound 0x06 Update Float
+//Play Clientbound 0x06 Update Health
 typedef struct {
 	float health;
 	int16_t food;
@@ -214,6 +214,39 @@ typedef struct {
 
 int mcp_encode_pc06(uint8_t *buf, mcp_pc06_t *packet, size_t buf_len);
 int mcp_decode_pc06(mcp_pc06_t *packet, uint8_t *buf, size_t buf_len);
+
+//Play Clientbound 0x07 Respawn
+typedef struct {
+	int32_t dimension;
+	uint8_t difficulty;
+	uint8_t gamemode;
+	mcp_str_t level_type;
+} mcp_pc07_t;
+
+int mcp_encode_pc07(uint8_t *buf, mcp_pc07_t *packet, size_t buf_len);
+int mcp_decode_pc07(mcp_pc07_t *packet, uint8_t *buf, size_t buf_len,
+	mcp_alloc mcpalloc);
+
+//Play Clientbound 0x08 Player Position and Look
+typedef struct {
+	double x;
+	double y;
+	double z;
+	float yaw;
+	float pitch;
+	uint8_t on_ground;
+} mcp_pc08_t;
+
+int mcp_encode_pc08(uint8_t *buf, mcp_pc08_t *packet, size_t buf_len);
+int mcp_decode_pc08(mcp_pc08_t *packet, uint8_t *buf, size_t buf_len);
+
+//Play Clientbound 0x09 Held Item Change
+typedef struct {
+	int8_t slot_num;
+} mcp_pc09_t;
+
+int mcp_encode_pc09(uint8_t *buf, mcp_pc09_t *packet, size_t buf_len);
+int mcp_decode_pc09(mcp_pc09_t *packet, uint8_t *buf, size_t buf_len);
 
 #ifdef __cplusplus
 }

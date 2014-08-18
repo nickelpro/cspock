@@ -134,8 +134,7 @@ int mcp_encode_slot(uint8_t *buf, mcp_slot_t slot, size_t buf_len)
 	if (buf_len < sizeof(slot.id)) {
 		return -1;
 	}
-	*(int16_t*) buf = hton16(slot.id);
-	size_t len = sizeof(slot.id);
+	size_t len = mcp_encode_int16(buf, slot.id);
 	if (slot.id == -1) {
 		return len;
 	} else if (
@@ -144,12 +143,9 @@ int mcp_encode_slot(uint8_t *buf, mcp_slot_t slot, size_t buf_len)
 	) {
 		return -1;
 	}
-	*(buf + len) = slot.count;
-	len += sizeof(slot.count);
-	*(int16_t*)(buf + len) = hton16(slot.damage);
-	len += sizeof(slot.damage);
-	*(int16_t*)(buf + len) = hton16(slot.nbt_len);
-	len += sizeof(slot.nbt_len);
+	len += mcp_encode_int8(buf + len, slot.count);
+	len += mcp_encode_int16(buf + len, slot.damage);
+	len += mcp_encode_int16(buf + len, slot.nbt_len);
 	memcpy(buf + len, slot.nbt_base, slot.nbt_len);
 	len += slot.nbt_len;
 	return len;
@@ -162,8 +158,7 @@ int mcp_decode_slot(mcp_slot_t *slot, uint8_t *buf, size_t buf_len,
 	if (buf_len < sizeof(slot->id)) {
 		return -1;
 	}
-	slot->id = ntoh16(*(int16_t*) buf);
-	size_t len = sizeof(slot->id);
+	size_t len = mcp_decode_int16(&slot->id, buf);
 	if (slot->id == -1) {
 		slot->count = -1;
 		slot->damage = -1;
@@ -176,12 +171,9 @@ int mcp_decode_slot(mcp_slot_t *slot, uint8_t *buf, size_t buf_len,
 	) {
 		return -1;
 	}
-	slot->count = *(buf + len);
-	len += sizeof(slot->count);
-	slot->damage = ntoh16(*(int16_t*)(buf + len));
-	len += sizeof(slot->damage);
-	slot->nbt_len = ntoh16(*(int16_t*)(buf + len));
-	len += sizeof(slot->nbt_len);
+	len += mcp_decode_int8(&slot->count, buf + len);
+	len += mcp_decode_int16(&slot->damage, buf + len);
+	len += mcp_decode_int16(&slot->nbt_len, buf + len);
 	if (buf_len < len + slot->nbt_len) {
 		return -1;
 	}
