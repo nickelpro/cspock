@@ -268,6 +268,23 @@ typedef struct {
 int mcp_encode_pc0B(uint8_t *buf, mcp_pc0B_t *packet, size_t buf_len);
 int mcp_decode_pc0B(mcp_pc0B_t *packet, uint8_t *buf, size_t buf_len);
 
+//Play Clientbound 0x0C Spawn Player
+typedef struct {
+	int32_t eid;
+	mcp_str_t uuid;
+	mcp_str_t name;
+	int32_t data_count;
+	mcp_str_t *prop_names;
+	mcp_str_t *prop_vals;
+	mcp_str_t *prop_sigs;
+	int32_t x;
+	int32_t y;
+	int8_t yaw;
+	int8_t pitch;
+	int16_t current_item;
+	mcp_meta_t metadata;
+} mcp_pc0C_t;
+
 #ifdef __cplusplus
 }
 #endif
