@@ -6,7 +6,7 @@ CFLAGS=-Wall
 all: mcp
 
 mcp: $(mcp_files) test.c
-	$(CC) $(CFLAGS) $(includes) $^ -o $@
+	$(CC) $(CFLAGS) $(includes) -Wno-pointer-sign $^ -o $@
 
 ping_test: $(mcp_files) client_test.c
 	$(CC) $(CFLAGS) $(libdir) $(includes) -Wno-pointer-sign -luv -Wl,-rpath,/home/nick/code/cspock/libuv/lib/ $^ -o $@

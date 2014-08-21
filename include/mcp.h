@@ -45,6 +45,34 @@ int mcp_encode_slot(uint8_t *buf, mcp_slot_t slot, size_t buf_len);
 int mcp_decode_slot(mcp_slot_t *slot, uint8_t *buf, size_t buf_len,
 	mcp_alloc mcpalloc);
 
+typedef enum {
+	MCP_METANUM8_T,
+	MCP_METANUM16_T,
+	MCP_METANUM32_T,
+	MCP_METANUMF_T,
+	MCP_METASTR_T,
+	MCP_METASLOT_T,
+	MCP_METAARR_T
+} mcp_metatype_t;
+
+typedef struct mcp_meta_s {
+	mcp_metatype_t type_id;
+	union {
+		int8_t num8;
+		int16_t num16;
+		int32_t num32;
+		float numf;
+		mcp_str_t str;
+		mcp_slot_t slot;
+		int32_t arr[3];
+	};
+	struct mcp_meta_s *next;
+} mcp_meta_t;
+
+int mcp_encode_meta(uint8_t *buf, mcp_meta_t meta, size_t buf_len);
+int mcp_decode_meta(mcp_meta_t *meta, uint8_t *buf, size_t buf_len,
+	mcp_alloc mcpalloc);
+
 int mcp_encode_plen(uint8_t *buf, size_t plen, size_t buf_len);
 
 int mcp_decode_pheader(size_t *size, int32_t *id, uint8_t *buf,
@@ -282,7 +310,7 @@ typedef struct {
 	int8_t yaw;
 	int8_t pitch;
 	int16_t current_item;
-	mcp_meta_t metadata;
+	mcp_meta_t* metadata;
 } mcp_pc0C_t;
 
 #ifdef __cplusplus
