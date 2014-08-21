@@ -183,6 +183,40 @@ int mcp_decode_slot(mcp_slot_t *slot, uint8_t *buf, size_t buf_len,
 	return len;
 }
 
+int mcp_encode_meta(uint8_t *buf, mcp_meta_t meta, size_t buf_len)
+{
+	uint8_t byte;
+	size_t i, len;
+	while (i = 0, len = 0; i < meta.len; ++i ) {
+		if (buf_len < len + sizeof(uint8_t)) {
+			return -1;
+		}
+		byte = (meta.objs[i].type_id<<5)&(meta.objs[i].index);
+		len += mcp_encode_int8(buf + len, byte);
+		switch (meta.objs[i].type_id) {
+			case MCP_METANUM8_T:
+				break;
+			case MCP_METANUM16_T:
+				break;
+			case MCP_METANUM32_T:
+				break;
+			case MCP_METANUMF_T:
+				break;
+			case MCP_METASTR_T:
+				break;
+			case MCP_METASLOT_T:
+				break;
+			case MCP_METAARR_T:
+				break;
+		}
+	}
+	return 0;
+}
+
+int mcp_decode_meta(mcp_meta_t *meta, uint8_t *buf, size_t buf_len,
+	mcp_alloc mcpalloc) {
+	return 0;
+}
 
 int mcp_encode_plen(uint8_t *buf, size_t plen, size_t buf_len) 
 {
