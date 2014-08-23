@@ -1,4 +1,4 @@
 cspock
 ======
 
-HOW DO I COMMIT? IS THIS THE INTERNET? WHO ARE YOU PEOPLE
+The beginnings of a Minecraft framework in C, because it made too much sense in other languages
