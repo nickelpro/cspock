@@ -187,6 +187,7 @@ int mcp_encode_meta(uint8_t *buf, mcp_meta_t meta, size_t buf_len)
 {
 	uint8_t byte;
 	size_t i, len;
+	int ret;
 	while (i = 0, len = 0; i < meta.len; ++i ) {
 		if (buf_len < len + sizeof(uint8_t)) {
 			return -1;
@@ -195,30 +196,183 @@ int mcp_encode_meta(uint8_t *buf, mcp_meta_t meta, size_t buf_len)
 		len += mcp_encode_int8(buf + len, byte);
 		switch (meta.objs[i].type_id) {
 			case MCP_METANUM8_T:
+				if (buf_len < len + sizeof(uint8_t)) {
+					return -1;
+				}
+				len += mcp_encode_int8(buf + len, meta.objs[i].num8);
 				break;
 			case MCP_METANUM16_T:
+				if (buf_len < len + sizeof(uint16_t)) {
+					return -1;
+				}
+				len += mcp_encode_int16(buf + len, meta.objs[i].num16);
 				break;
 			case MCP_METANUM32_T:
+				if (buf_len < len + sizeof(uint32_t)) {
+					return -1;
+				}
+				len += mcp_encode_int32(buf + len, meta.objs[i].num32);
 				break;
 			case MCP_METANUMF_T:
+				if (buf_len < len + sizeof(float)) {
+					return -1;
+				}
+				len += mcp_encode_float(buf + len, meta.objs[i].numf);
 				break;
 			case MCP_METASTR_T:
+				ret = mcp_encode_str(buf + len, meta.objs[i].str, buf_len);
+				if (ret < 0) {
+					return ret;
+				}
+				len += ret;
 				break;
 			case MCP_METASLOT_T:
+				ret = mcp_encode_slot(buf + len, meta.objs[i].slot, buf_len);
+				if (ret < 0) {
+					return ret;
+				}
+				len += ret;
 				break;
 			case MCP_METAARR_T:
+				if (buf_len < len + sizeof(uint32_t)*3) {
+					return -1;
+				}
+				len += mcp_encode_int32(buf + len, meta.objs[i].arr[0]);
+				len += mcp_encode_int32(buf + len, meta.objs[i].arr[1]);
+				len += mcp_encode_int32(buf + len, meta.objs[i].arr[3]);
 				break;
 		}
 	}
-	return 0;
+	return len;
 }
 
+int mcp_get_metasize(size_t *objs_len, uint8_t *buf, size_t buf_len) {
+	uint8_t byte;
+	int ret;
+	int32_t varint;
+	size_t len = 0;
+	(*objs_len) = 0;
+	for (;;) {
+		if (buf_len < len + sizeof(uint8_t)) {
+			return -1;
+		}
+		len += mcp_decode_int8(&byte, buf + len);
+		if (byte == MCP_METAEND_T) {
+			return len;
+		}
+		switch (byte>>5) {
+			case MCP_METANUM8_T:
+				if (buf_len < len + sizeof(uint8_t)) {
+					return -1;
+				}
+				len += sizeof(uint8_t);
+				break;
+			case MCP_METANUM16_T:
+				if (buf_len < len + sizeof(uint16_t)) {
+					return -1;
+				}
+				len += sizeof(uint16_t);
+				break;
+			case MCP_METANUM32_T:
+				if (buf_len < len + sizeof(uint32_t)) {
+					return -1;
+				}
+				len += sizeof(uint32_t);
+				break;
+			case MCP_METANUMF_T:
+				if (buf_len < len + sizeof(float)) {
+					return -1;
+				}
+				len += sizeof(float);
+				break;
+			case MCP_METASTR_T:
+				ret = mcp_decode_varint(&varint, buf + len, buf_len);
+				if (ret < 0) {
+					return ret;
+				} else if (buf_len < len + ret + varint) {
+					return -1;
+				}
+				len += ret + varint;
+				break;
+			case MCP_METASLOT_T:
+				if (buf_len < len + sizeof(uint16_t)) {
+					return -1;
+				}
+				int16_t slot_byte;
+				len += mcp_decode_int16(&slot_byte, buf + len);
+				if (slot_byte == -1) {
+					break;
+				} else if (
+					buf_len < len + sizeof(uint8_t) + sizeof(uint16_t)*2
+				) {
+					return -1;
+				}
+				len += sizeof(uint8_t) + sizeof(uint16_t);
+				len += mcp_decode_int16(&slot_byte, buf + len);
+				if (buf_len < len + slot_byte) {
+					return -1;
+				}
+				len += slot_byte;
+				break;
+			case MCP_METAARR_T:
+				if (buf_len < len + sizeof(uint32_t)*3) {
+					return -1;
+				}
+				len += sizeof(uint32_t)*3;
+				break;
+		} //End of switch
+		++(*objs_len);
+	} //End of for loop
+}
+
+//ToDo Error check mcpalloc
 int mcp_decode_meta(mcp_meta_t *meta, uint8_t *buf, size_t buf_len,
 	mcp_alloc mcpalloc) {
-	return 0;
+	uint8_t byte;
+	size_t objs_len = 0;
+	int ret = mcp_get_metasize(&objs_len, buf, buf_len);
+	if (ret < 0) {
+		return ret;
+	}
+	meta->len = objs_len;
+	meta->objs = mcpalloc(sizeof(mcp_metaobj_t)*objs_len);
+	size_t i, len;
+	for (i = 0, len = 0; i < objs_len; ++i) {
+		len += mcp_decode_int8(&byte, buf);
+		meta->objs[i].type_id = byte>>5;
+		meta->objs[i].index = byte&0x1F;
+		switch (meta->objs[i].type_id) {
+			case MCP_METANUM8_T:
+				len += mcp_decode_int8(&meta->objs[i].num8, buf + len);
+				break;
+			case MCP_METANUM16_T:
+				len += mcp_decode_int16(&meta->objs[i].num16, buf + len);
+				break;
+			case MCP_METANUM32_T:
+				len += mcp_decode_int32(&meta->objs[i].num32, buf + len);
+				break;
+			case MCP_METANUMF_T:
+				len += mcp_decode_float(&meta->objs[i].numf, buf + len);
+				break;
+			case MCP_METASTR_T:
+				len += mcp_decode_str(&meta->objs[i].str, buf + len, buf_len,
+					mcpalloc);
+				break;
+			case MCP_METASLOT_T:
+				len += mcp_decode_slot(&meta->objs[i].slot, buf + len, buf_len,
+					mcpalloc);
+				break;
+			case MCP_METAARR_T:
+				len += mcp_decode_int32(&meta->objs[i].arr[0], buf + len);
+				len += mcp_decode_int32(&meta->objs[i].arr[1], buf + len);
+				len += mcp_decode_int32(&meta->objs[i].arr[2], buf + len);
+				break;
+		}
+	}
+	return ret;
 }
 
-int mcp_encode_plen(uint8_t *buf, size_t plen, size_t buf_len) 
+int mcp_encode_plen(uint8_t *buf, size_t plen, size_t buf_len)
 {
 	uint8_t tbuf[sizeof(int32_t)];
 	int ret = mcp_encode_varint(tbuf, plen, sizeof(int32_t));
