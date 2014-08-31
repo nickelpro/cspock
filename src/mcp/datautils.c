@@ -246,7 +246,8 @@ int mcp_encode_meta(uint8_t *buf, mcp_meta_t meta, size_t buf_len)
 	return len;
 }
 
-int mcp_get_metasize(size_t *objs_len, uint8_t *buf, size_t buf_len) {
+int mcp_get_metasize(size_t *objs_len, uint8_t *buf, size_t buf_len)
+{
 	uint8_t byte;
 	int ret;
 	int32_t varint;
@@ -327,7 +328,8 @@ int mcp_get_metasize(size_t *objs_len, uint8_t *buf, size_t buf_len) {
 
 //ToDo Error check mcpalloc
 int mcp_decode_meta(mcp_meta_t *meta, uint8_t *buf, size_t buf_len,
-	mcp_alloc mcpalloc) {
+	mcp_alloc mcpalloc)
+{
 	uint8_t byte;
 	size_t objs_len = 0;
 	int ret = mcp_get_metasize(&objs_len, buf, buf_len);

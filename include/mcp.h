@@ -306,7 +306,6 @@ typedef struct {
 	mcp_str_t uuid;
 	mcp_str_t name;
 	int32_t data_count;
-	size_t prop_len;
 	struct {
 		mcp_str_t name;
 		mcp_str_t val;
@@ -314,10 +313,10 @@ typedef struct {
 	} *props;
 	int32_t x;
 	int32_t y;
+	int32_t z;
 	int8_t yaw;
 	int8_t pitch;
 	int16_t current_item;
-	size_t metadata_len;
 	mcp_meta_t metadata;
 } mcp_pc0C_t;
 

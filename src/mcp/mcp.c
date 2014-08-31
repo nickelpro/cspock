@@ -23,7 +23,7 @@ int mcp_encode_hs00(uint8_t *buf, mcp_hs00_t *packet, size_t buf_len)
 	}
 	len += ret;
 	if (
-		buf_len < len + sizeof(packet->server_port) + 
+		buf_len < len + sizeof(packet->server_port) +
 		sizeof(packet->next_state)
 	) {
 		return -1;
@@ -305,8 +305,8 @@ int mcp_decode_pc01(mcp_pc01_t *packet, uint8_t *buf, size_t buf_len,
 	mcp_alloc mcpalloc)
 {
 	if (
-		buf_len < sizeof(packet->eid) + sizeof(packet->gamemode) + 
-		sizeof(packet->dimension) + sizeof(packet->difficulty) + 
+		buf_len < sizeof(packet->eid) + sizeof(packet->gamemode) +
+		sizeof(packet->dimension) + sizeof(packet->difficulty) +
 		sizeof(packet->max_players)
 	) {
 		return -1;
@@ -352,7 +352,7 @@ int mcp_decode_pc02(mcp_pc02_t *packet, uint8_t *buf, size_t buf_len,
 int mcp_encode_pc03(uint8_t *buf, mcp_pc03_t *packet, size_t buf_len)
 {
 	if (
-		buf_len < sizeof(*buf) + sizeof(packet->age_of_world) + 
+		buf_len < sizeof(*buf) + sizeof(packet->age_of_world) +
 		sizeof(packet->time_of_day)
 	) {
 		return -1;
@@ -378,7 +378,7 @@ int mcp_decode_pc03(mcp_pc03_t *packet, uint8_t *buf, size_t buf_len)
 int mcp_encode_pc04(uint8_t *buf, mcp_pc04_t *packet, size_t buf_len)
 {
 	if (
-		buf_len < sizeof(*buf) + sizeof(packet->eid) + 
+		buf_len < sizeof(*buf) + sizeof(packet->eid) +
 		sizeof(packet->slot_num)
 	) {
 		return -1;
@@ -398,7 +398,7 @@ int mcp_decode_pc04(mcp_pc04_t *packet, uint8_t *buf, size_t buf_len,
 	mcp_alloc mcpalloc)
 {
 	if (
-		buf_len < sizeof(*buf) + sizeof(packet->eid) + 
+		buf_len < sizeof(*buf) + sizeof(packet->eid) +
 		sizeof(packet->slot_num)
 	) {
 		return -1;
@@ -406,7 +406,7 @@ int mcp_decode_pc04(mcp_pc04_t *packet, uint8_t *buf, size_t buf_len,
 	size_t len = 0;
 	len += mcp_decode_int32(&packet->eid, buf + len);
 	len += mcp_decode_int16(&packet->slot_num, buf + len);
-	int ret = mcp_decode_slot(&packet->item, buf + len, buf_len - len, 
+	int ret = mcp_decode_slot(&packet->item, buf + len, buf_len - len,
 		mcpalloc);
 	if (ret < 0) {
 		return ret;
@@ -444,7 +444,7 @@ int mcp_decode_pc05(mcp_pc05_t *packet, uint8_t *buf, size_t buf_len)
 int mcp_encode_pc06(uint8_t *buf, mcp_pc06_t *packet, size_t buf_len)
 {
 	if (
-		buf_len < sizeof(*buf) + sizeof(packet->health) + 
+		buf_len < sizeof(*buf) + sizeof(packet->health) +
 		sizeof(packet->food) + sizeof(packet->saturation)
 	) {
 		return -1;
@@ -458,7 +458,7 @@ int mcp_encode_pc06(uint8_t *buf, mcp_pc06_t *packet, size_t buf_len)
 int mcp_decode_pc06(mcp_pc06_t *packet, uint8_t *buf, size_t buf_len)
 {
 	if (
-		buf_len < sizeof(packet->health) + sizeof(packet->food) + 
+		buf_len < sizeof(packet->health) + sizeof(packet->food) +
 		sizeof(packet->saturation)
 	) {
 		return -1;
@@ -621,4 +621,73 @@ int mcp_decode_pc0B(mcp_pc0B_t *packet, uint8_t *buf, size_t buf_len)
 	len += ret;
 	len += mcp_decode_int8(&packet->animation, buf + len);
 	return len;
+}
+
+//Play Clientbound 0x0C Spawn Player
+int mcp_encode_pc0C(uint8_t *buf, mcp_pc0C_t *packet, size_t buf_len)
+{
+	if (buf_len < sizeof(uint8_t)) {
+		return -1;
+	}
+	size_t len = mcp_encode_int8(buf, 0x0C);
+	int ret = mcp_encode_varint(buf + len, packet->eid, buf_len);
+	if (ret < 0) {
+		return ret;
+	}
+	len += ret;
+	ret = mcp_encode_str(buf + len, packet->uuid, buf_len);
+	if (ret < 0) {
+		return ret;
+	}
+	len += ret;
+	ret = mcp_encode_str(buf + len, packet->name, buf_len);
+	if (ret < 0) {
+		return ret;
+	}
+	len += ret;
+	int ret = mcp_encode_varint(buf + len, packet->data_count, buf_len);
+	if (ret < 0) {
+		return ret;
+	}
+	len += ret;
+
+	int i;
+	for (i = 0; i < packet->data_count; ++i) {
+		ret = mcp_encode_str(buf + len, packet->props[i].name, buf_len);
+		if (ret < 0) {
+			return ret;
+		}
+		len += ret;
+		ret = mcp_encode_str(buf + len, packet->props[i].val, buf_len);
+		if (ret < 0) {
+			return ret;
+		}
+		len += ret;
+		ret = mcp_encode_str(buf + len, packet->props[i].sig, buf_len);
+		if (ret < 0) {
+			return ret;
+		}
+		len += ret;
+	}
+
+	if (buf_len < len + sizeof(int32_t)*3 + sizeof(int8_t)*2 + sizeof(int16_t)) {
+		return -1;
+	}
+	len += mcp_encode_int32(buf + len, packet->x);
+	len += mcp_encode_int32(buf + len, packet->y);
+	len += mcp_encode_int32(buf + len, packet->z);
+	len += mcp_encode_int16(buf + len, packet->yaw);
+	len += mcp_encode_int16(buf + len, packet->pitch);
+	ret = mcp_encode_meta(buf + len, packet->metadata, buf_len);
+	if (ret < 0) {
+		return ret;
+	}
+	len += ret;
+	return len;
+}
+
+int mcp_decode_pc0C(mcp_pc0C_t *packet, uint8_t *buf, size_t buf_len,
+	mcp_alloc mcpalloc)
+{
+	return 0;
 }
