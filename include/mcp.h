@@ -54,7 +54,8 @@ typedef struct {
 		MCP_METANUMF_T,
 		MCP_METASTR_T,
 		MCP_METASLOT_T,
-		MCP_METAARR_T
+		MCP_METAARR_T,
+		MCP_METAEND_T = 0x7F
 	} type_id;
 	union {
 		int8_t num8;
